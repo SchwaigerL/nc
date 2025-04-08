@@ -1,0 +1,127 @@
+% Copyright 2009, 2020 Stefan Huber <shuber@sthu.org>
+
+\DeclareOptionBeamer{compress}{\beamer@compresstrue}
+\ProcessOptionsBeamer
+
+\input{resources/translations.tex}
+
+\mode<presentation>
+
+\usecolortheme{ITD1}
+
+%\useoutertheme{infolines}
+%\useoutertheme{shadow}
+%\useoutertheme{split}
+%\useinnertheme[shadow=true]{rounded}
+%\useroutertheme{} % No outer theme
+\useinnertheme{rectangles}
+
+\usepackage{tikz}
+
+\usepackage{ifthen}
+\newcommand{\withframelogo}{\def\isframelogo{true}}
+\newcommand{\withoutframelogo}{\def\isframelogo{}}
+\withframelogo
+
+%adding logo to framtitle (upper right corner)
+% \addtobeamertemplate{frametitle}{}{%
+%   \ifthenelse{\equal{\isframelogo}{}}{}{%
+%       \begin{tikzpicture}[remember picture,overlay,opacity=.7]%
+%         \node[anchor=north east,xshift=-1ex,yshift=-.7ex,inner sep=0pt] at (current page.north east) {%
+%           \includegraphics[height=0.6cm]{resources/logo-eule.png}
+%         };
+%       \end{tikzpicture}
+%     }
+% }
+
+% Set background image only on title frame
+% \addtobeamertemplate{title page}{
+%   \begin{tikzpicture}[remember picture,overlay]
+%     \node[above right,inner sep=0pt] at (current page.south west)
+%     {
+%       \includegraphics[width=\paperwidth]{resources/background.png}
+%     };
+%   \end{tikzpicture}
+% }
+% Would set background image on every frame
+%\usebackgroundtemplate{\includegraphics[width=\paperwidth]{resources/background.png}}
+
+% \titlegraphic{\includegraphics[width=2cm]{\institutelogo}}
+
+\setbeamertemplate{itemize items}[triangle]
+
+\setbeamerfont{frametitle}{parent=structure,size=\Large}
+\setbeamerfont{author}{size=\small}
+\setbeamerfont{date}{size=\normalsize}
+%\setbeamerfont{title}{series=\bfseries}
+
+
+\defbeamertemplate*{footline}{ITD1 theme}
+{%
+	\leavevmode%
+	\hbox{%
+		\begin{beamercolorbox}[wd=\textwidth,ht=2.25ex,dp=1ex]{footline}%
+			\hspace{1ex}\insertshortauthor:\hspace{2ex}\bf\insertshorttitle\normalfont
+			\hfill \insertsectionhead%
+			\ifnum\value{subsection}=0\relax%
+			{}%
+			\else%
+			{\ /\ \insertsubsectionhead}%
+			\fi%
+			\hspace*{4ex} \bf \insertframenumber{} \of\ \inserttotalframenumber\hspace{2ex}
+		\end{beamercolorbox}%
+	}%
+    %\vskip0pt%
+}
+
+\setbeamertemplate{footnote}
+{%
+  \parindent 1em\noindent%
+  \raggedright%
+  \insertfootnotemark\enspace\tiny\insertfootnotetext\par%
+}
+
+
+\setbeamersize{text margin left=1em,text margin right=1em}
+
+
+\newcommand{\framenumbersave}{%
+    \ifcsname c@tmpframenumber\endcsname%
+    \else%
+        \newcounter{tmpframenumber}%
+        \newcounter{tmpframenumberstored}%
+        \setcounter{tmpframenumberstored}{0}
+    \fi%
+
+    \ifnum \value{tmpframenumberstored}=0
+        \setcounter{tmpframenumber}{\value{framenumber}}
+    \fi
+    \addtocounter{tmpframenumberstored}{1}
+}
+\newcommand{\framenumberrestore}{%
+    \addtocounter{tmpframenumberstored}{-1}
+    \ifnum \value{tmpframenumberstored}=0
+        \setcounter{framenumber}{\value{tmpframenumber}}
+    \fi
+}
+\newenvironment{skipframecount}{\framenumbersave}{\framenumberrestore}
+
+
+\let\fcntpart\part
+\renewcommand{\part}[1]{\framenumbersave\fcntpart{#1}\framenumberrestore}
+\let\fcntsection\section
+\renewcommand{\section}[1]{\framenumbersave\fcntsection{#1}\framenumberrestore}
+\let\fcntsubsection\subsection
+\renewcommand{\subsection}[1]{\framenumbersave\fcntsubsection{#1}\framenumberrestore}
+
+\newcommand{\fullframe}[1]{%
+  \begingroup
+  \setbeamercolor{background canvas}{bg=itdcolor}
+  \begin{frame}
+    \color{white}
+    \centering\Huge #1
+  \end{frame}
+  \endgroup
+}
+
+\mode<all>
