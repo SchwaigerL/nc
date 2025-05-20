@@ -203,4 +203,5 @@ cython_debug/
 *-blx.bib
 *.run.xml
 
-presentations/*/*.pdf
+presentations/*/*.pdf 
+code/*/data/
