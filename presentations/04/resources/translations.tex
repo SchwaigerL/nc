@@ -1,0 +1,35 @@
+% Dictionary
+
+\usepackage{iflang}
+
+% Default definitions. Will be redefined for particular languages
+\def\of{of}
+\def\fhshort{SUAS}
+\def\fhlong{Salzburg University of Applied Sciences}
+\def\plusshort{PLUS}
+\def\pluslong{University of Salzburg}
+\def\depitshort{IT}
+\def\depitlong{Department for Information Technologies and Digitalisation}
+\def\isiashort{JRC ISIA}
+\def\isialong{Josef Ressel Center for Intelligent and Secure Industrial Automation}
+\def\institutelogo{resources/logo-suas.pdf}
+
+\IfLanguageName{german}{\def\isgerman{}}{}
+\IfLanguageName{naustrian}{\def\isgerman{}}{}
+\IfLanguageName{ngerman}{\def\isgerman{}}{}
+
+
+\makeatletter
+
+\@ifundefined{isgerman}{}{%
+  \def\of{von}
+  \def\fhshort{FH Salzburg}
+  \def\fhlong{Fachhochschule Salzburg}
+  \def\depitshort{IT}
+  \def\depitlong{Department Information Technologies and Digitalisation}
+  \def\isiashort{JRZ ISIA}
+  \def\isialong{Josef Ressel Zentrum für Intelligente und Sichere Industrieautomatisierung}
+  \def\institutelogo{resources/logo-fhs.pdf}
+}
+
+\makeatother
