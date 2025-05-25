@@ -1,0 +1,3 @@
+# We are using AMP(Automatic Mixed Precision) with gradients to observe the accuracy of precision types.
+# Global Norm Gradient, Affect of Gradient on accuracy, training and testing timings.
+# Gradient Value Clipping, Affect of different Gradients on precision FP16 & Fp32.
