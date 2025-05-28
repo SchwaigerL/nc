@@ -1,0 +1,90 @@
+// Run this shit via: dot -Tpng -Gdpi=300 nnStructure.dot -o mlp.png
+
+digraph MLP {
+    rankdir=LR;
+    node [shape=circle style=filled fillcolor=lightgray fontname="CMU Serif"];
+    subgraph clusterInput {
+        label="Input Layer (784)";
+        x1 [label="x1"];
+        x2 [label="x2"];
+        xDots [label="..."];
+        x784 [label="x784"];
+    }
+    subgraph clusterHidden1 {
+        label="Linear (784,128) + ReLU";
+        style=dashed;
+        h1_1 [label="h1"];
+        h1_2 [label="h2"];
+        h1Dots [label="..."];
+        h1_128 [label="h128"];
+    }
+    subgraph clusterHidden2 {
+        label="Linear (128,64) + ReLU";
+        style=dashed;
+        h2_1 [label="h1"];
+        h2_2 [label="h2"];
+        h2Dots [label="..."];
+        h2_64 [label="h64"];
+    }
+    subgraph clusterOutput {
+        label="Output Layer (10 logits)";
+        y1 [label="y1"];
+        y2 [label="y2"];
+        yDots [label="..."];
+        y10 [label="y10"];
+    }
+
+    //Input Layer -> Hidden Layer 1
+    x1 -> h1_1;
+    x1 -> h1_2;
+    x1 -> h1Dots;
+    x1 -> h1_128;
+    x2 -> h1_1;
+    x2 -> h1_2;
+    x2 -> h1Dots;
+    x2 -> h1_128;
+    xDots -> h1_1;
+    xDots -> h1_2;
+    xDots -> h1Dots;
+    xDots -> h1_128;
+    x784 -> h1_1;
+    x784 -> h1_2;
+    x784 -> h1Dots;
+    x784 -> h1_128;
+
+    //Hidden Layer 1 -> Hidden Layer 2
+    h1_1 -> h2_1;
+    h1_1 -> h2_2;
+    h1_1 -> h2Dots;
+    h1_1 -> h2_64;
+    h1_2 -> h2_1;
+    h1_2 -> h2_2;
+    h1_2 -> h2Dots;
+    h1_2 -> h2_64;
+    h1Dots -> h2_1;
+    h1Dots -> h2_2;
+    h1Dots -> h2Dots;
+    h1Dots -> h2_64;
+    h1_128 -> h2_1;
+    h1_128 -> h2_2;
+    h1_128 -> h2Dots;
+    h1_128 -> h2_64;
+
+    //Hidden Layer 2 -> Output
+    h2_1 -> y1;
+    h2_1 -> y2;
+    h2_1 -> yDots;
+    h2_1 -> y10;
+    h2_2 -> y1;
+    h2_2 -> y2;
+    h2_2 -> yDots;
+    h2_2 -> y10;
+    h2Dots -> y1;
+    h2Dots -> y2;
+    h2Dots -> yDots;
+    h2Dots -> y10;
+    h2_64 -> y1;
+    h2_64 -> y2;
+    h2_64 -> yDots;
+    h2_64 -> y10;
+}
