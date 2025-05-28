@@ -205,3 +205,4 @@ cython_debug/
 
 presentations/*/*.pdf 
 code/*/data/
+paper/main.pdf
