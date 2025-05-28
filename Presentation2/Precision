@@ -1,0 +1,10 @@
+# We are using AMP(Automatic Mixed Precision) with gradients to observe the accuracy of precision types.
+# Global Norm Gradient, Affect of Gradient on accuracy, training and testing timings.
+# Gradient Value Clipping, Affect of different Gradients on precision FP16 & Fp32.
+
+## References
+# https://docs.pytorch.org/docs/stable/generated/torch.nn.utils.clip_grad_norm_.html
+## On the difficulty of training Recurrent Neural Networks
+# https://arxiv.org/abs/1211.5063
+## Mixed Precision Training
+# https://arxiv.org/abs/1710.03740
