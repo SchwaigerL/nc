@@ -1,6 +1,5 @@
 \documentclass[11pt]{article}
 
-% Packages
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath, amssymb}
 \usepackage{graphicx}
@@ -19,10 +18,10 @@
 \usepackage{hyperref}
 
 \usepackage[style=nejm,
-citestyle=numeric-comp,
-sorting=none,
-doi=false,
-backend=bibtex]{biblatex}
+	citestyle=numeric-comp,
+	sorting=none,
+	doi=false,
+	backend=bibtex]{biblatex}
 \addbibresource{literature.bib}
 
 % Geometry settings
@@ -41,159 +40,229 @@ backend=bibtex]{biblatex}
 \title{An Experimental Analysis of the Influence of the Precision of
 	Parameters in an Artificial Neural Network}
 \author{Denise Katritschenko, Elias Reich, Sayed Abozar Sadat, Lukas Schwaiger\\
-	\small University of Salzburg\\	
+	\small University of Salzburg\\
 	\small Department of Artificial Intelligence and Human Interfaces (AIHI) }
 
 \date{\today}
 
 \begin{document}
-	
-	\maketitle
-	
-	\begin{abstract}
-		TODO
-	\end{abstract}
-	
-	\section{Introduction}
-	Artificial Neural Networks (ANNs) are a key part of today’s machine learning systems. They’ve made huge progress in areas like image recognition, speech processing, and self-driving cars. However, one of the biggest challenges with ANNs is that they use a lot of memory and computing power. This becomes a problem when you want to run them on devices with limited resources, such as smartphones, embedded systems, or edge devices. \\ \\
-	To solve this, researchers have looked into ways to make neural networks more efficient. A common approach is to reduce the size of the network or shrink the input batch size. But doing this can harm the network’s ability to learn and generalize. A better strategy is to reduce the numerical precision of the network’s parameters such as things like weights, activations, and gradients. This method, called quantization, makes the model smaller and faster while using less energy, without necessarily hurting accuracy. \\ \\
-	One advanced version of this method is called mixed-precision quantization. Instead of using the same number of bits for every layer in the network, mixed-precision assigns different bitwidths depending on how important each part is. For example, the early layers that handle low-level features might use higher precision, while deeper layers could work fine with fewer bits. This flexible approach often leads to better results than using a single fixed precision for the whole model. Researchers have used a range of techniques, like gradient descent, heuristics, and even evolutionary algorithms, to find the best bitwidth settings for each layer. \\ \\
-	Another method that helps reduce resource usage is network pruning. This means cutting out parts of the network that don’t contribute much to its performance. One interesting way to do this is with simulated annealing, a search algorithm that mimics the process of cooling metal to find a stable structure. It doesn’t need gradient information and can still find good network shapes by exploring many possibilities. This makes it useful when you want to shrink a network without going through heavy retraining. \\ \\
-	Previous studies have shown that reducing the precision of neural network parameters can lead to significant improvements in memory usage and processing speed. Even when precision is reduced to very low levels, models can still perform competitively on complex tasks. However, while these early results are promising, the overall effects of lowering precision, especially how it influences model accuracy, training behavior, and storage efficiency, are still not fully understood and deserve more detailed investigation. \\ \\
-	This is where our experimental work begins. 
-	In this paper, we take a closer look at how different levels of parameter precision affect the behavior and performance of neural networks. Our goal is to understand what happens when we reduce precision in various ways, and how much we can lower it before performance starts to drop. \\ \\
-	We start by testing how reducing precision during both training and inference affects model accuracy and runtime. Next, we look at what happens when we train the network using full precision, but lower the precision only during inference. This setup is common in real-world applications, where a powerful machine handles training, but the final model is deployed on a lightweight device. 
-	Then, we run a series of tests where we round the trained weights to a limited number of decimal places. This helps us see how much we can simplify the stored weight values without hurting accuracy too much. This is especially useful for devices with very limited storage. 
-	We also try out mixed-precision training, using a mix of FP16 and FP32 formats. On top of that, we experiment with different types of gradient clipping, like global norm clipping and value clipping, to see how they affect training stability and final accuracy. 
-	Even though we use relatively simple network architectures and datasets, our results show that neural networks are quite robust to low-precision settings. In some cases, we were able to round weights to just three decimal digits and still get nearly the same accuracy as the full-precision version. 
-	These findings show that it’s possible to significantly reduce the memory and compute needs of neural networks without losing much performance. This makes them more practical for use in low-resource settings. It also opens the door for more advanced techniques that combine quantization, pruning, and precision-aware training to build highly efficient models for real-world applications. 
-	
 
-	\section{Background}
+\maketitle
 
-	A typical neuron in a neural network performs a weighted sum of its inputs, followed by an activation function:
-	\[
+\begin{abstract}
+	TODO
+\end{abstract}
+
+\section{Introduction}
+Artificial Neural Networks (ANNs) are a key part of today’s machine learning
+systems. They’ve made huge progress in areas like image recognition, speech
+processing, and self-driving cars. However, one of the biggest challenges with
+ANNs is that they use a lot of memory and computing power. This becomes a
+problem when you want to run them on devices with limited resources, such as
+smartphones, embedded systems, or edge devices. \\ \\ To solve this,
+researchers have looked into ways to make neural networks more efficient. A
+common approach is to reduce the size of the network or shrink the input batch
+size. But doing this can harm the network’s ability to learn and generalize. A
+better strategy is to reduce the numerical precision of the network’s
+parameters such as things like weights, activations, and gradients. This
+method, called quantization, makes the model smaller and faster while using
+less energy, without necessarily hurting accuracy. \\ \\ One advanced version
+of this method is called mixed-precision quantization. Instead of using the
+same number of bits for every layer in the network, mixed-precision assigns
+different bitwidths depending on how important each part is. For example, the
+early layers that handle low-level features might use higher precision, while
+deeper layers could work fine with fewer bits. This flexible approach often
+leads to better results than using a single fixed precision for the whole
+model. Researchers have used a range of techniques, like gradient descent,
+heuristics, and even evolutionary algorithms, to find the best bitwidth
+settings for each layer. \\ \\ Another method that helps reduce resource usage
+is network pruning. This means cutting out parts of the network that don’t
+contribute much to its performance. One interesting way to do this is with
+simulated annealing, a search algorithm that mimics the process of cooling
+metal to find a stable structure. It doesn’t need gradient information and can
+still find good network shapes by exploring many possibilities. This makes it
+useful when you want to shrink a network without going through heavy
+retraining. \\ \\ Previous studies have shown that reducing the precision of
+neural network parameters can lead to significant improvements in memory usage
+and processing speed. Even when precision is reduced to very low levels, models
+can still perform competitively on complex tasks. However, while these early
+results are promising, the overall effects of lowering precision, especially
+how it influences model accuracy, training behavior, and storage efficiency,
+are still not fully understood and deserve more detailed investigation. \\ \\
+This is where our experimental work begins. In this paper, we take a closer
+look at how different levels of parameter precision affect the behavior and
+performance of neural networks. Our goal is to understand what happens when we
+reduce precision in various ways, and how much we can lower it before
+performance starts to drop. \\ \\ We start by testing how reducing precision
+during both training and inference affects model accuracy and runtime. Next, we
+look at what happens when we train the network using full precision, but lower
+the precision only during inference. This setup is common in real-world
+applications, where a powerful machine handles training, but the final model is
+deployed on a lightweight device. Then, we run a series of tests where we round
+the trained weights to a limited number of decimal places. This helps us see
+how much we can simplify the stored weight values without hurting accuracy too
+much. This is especially useful for devices with very limited storage. We also
+try out mixed-precision training, using a mix of FP16 and FP32 formats. On top
+of that, we experiment with different types of gradient clipping, like global
+norm clipping and value clipping, to see how they affect training stability and
+final accuracy. Even though we use relatively simple network architectures and
+datasets, our results show that neural networks are quite robust to
+low-precision settings. In some cases, we were able to round weights to just
+three decimal digits and still get nearly the same accuracy as the
+full-precision version. These findings show that it’s possible to significantly
+reduce the memory and compute needs of neural networks without losing much
+performance. This makes them more practical for use in low-resource settings.
+It also opens the door for more advanced techniques that combine quantization,
+pruning, and precision-aware training to build highly efficient models for
+real-world applications.
+
+\section{Background}
+
+A typical neuron in a neural network performs a weighted sum of its inputs,
+followed by an activation function:
+\[
 	a = \omega^\top x + b,\quad \hat{y} = \sigma(a),
-	\]
-	where \( \omega \in \mathbb{R}^n \) is the weight vector, \( b \in \mathbb{R} \) is the bias, \( x \in \mathbb{R}^n \) is the input, and \( \sigma \) is a nonlinear activation function (e.g., sigmoid or ReLU).
+\]
+where \( \omega \in \mathbb{R}^n \) is the weight vector, \( b \in \mathbb{R}
+\) is the bias, \( x \in \mathbb{R}^n \) is the input, and \( \sigma \) is a
+nonlinear activation function (e.g., sigmoid or ReLU).
 
-	Training is conducted via backpropagation, where gradients of a loss function \( L(\hat{y}, y) \) with respect to the model parameters are computed. For example, using mean squared error:
-	% \[
-	% L(\hat{y}, y) = (\hat{y} - y)^2, \qquad \pdv{L}{\omega_i} = 2(\hat{y} - y) \cdot \odv{\sigma}{a} \cdot x_i.
-	% \]
+Training is conducted via backpropagation, where gradients of a loss function
+\( L(\hat{y}, y) \) with respect to the model parameters are computed. For
+example, using mean squared error:
+% \[
+% L(\hat{y}, y) = (\hat{y} - y)^2, \qquad \pdv{L}{\omega_i} = 2(\hat{y} - y) \cdot \odv{\sigma}{a} \cdot x_i.
+% \]
 
-  	\begin{align*}
-    	L(f(x_1, x_2)) &= (\sigma(\omega^T x + b) - y) ^2\\
-                   	&= (\sigma(a) - y) ^ 2\\
-                   	&= (\hat y - y) ^ 2
-  	\end{align*}
-  	\begin{alignat*}{3}
-    	\pdv{L}{\omega_1} &= \pdv{L}{\sigma} &&\pdv{\sigma}{a}      &&\pdv{a}{\omega_1}\\
-                      	&= 2(\hat y - y)~~ &&\odv{}{a}\sigma(a)~~ &&x_1
-  	\end{alignat*}
+\begin{align*}
+	L(f(x_1, x_2)) & = {(\sigma(\omega^T x + b) - y)}^2 \\
+	               & = {(\sigma(a) - y)}^2              \\
+	               & = {(\hat y - y)}^2
+\end{align*}
+\begin{alignat*}{3}
+	\pdv{L}{\omega_1} & = \pdv{L}{\sigma} &  & \pdv{\sigma}{a}      &  & \pdv{a}{\omega_1} \\
+	                  & = 2(\hat y - y)~~ &  & \odv{}{a}\sigma(a)~~ &  & x_1
+\end{alignat*}
 
-	Memory and compute requirements during training are substantial, as gradients, activations, and parameters must be stored and updated iteratively. In contrast, inference requires only a forward pass, making it more amenable to optimization via precision reduction.
+Memory and compute requirements during training are substantial, as gradients,
+activations, and parameters must be stored and updated iteratively. In
+contrast, inference requires only a forward pass, making it more amenable to
+optimization via precision reduction.
 
-	\section{Memory Efficiency and Numerical Formats}
+\section{Memory Efficiency and Numerical Formats}
 
-	To reduce memory usage and computational load, precision-aware techniques such as quantization and mixed-precision training are increasingly employed. Instead of using 32-bit or 64-bit floating-point formats, parameters can be stored in 16-bit or even 8-bit fixed-point representations.
+To reduce memory usage and computational load, precision-aware techniques such
+as quantization and mixed-precision training are increasingly employed. Instead
+of using 32-bit or 64-bit floating-point formats, parameters can be stored in
+16-bit or even 8-bit fixed-point representations.
 
-	\begin{figure}[H]
-    	\centering
-    	\includegraphics[width=0.8\textwidth]{figures/float.png}
-    	\caption{Illustration of standard floating-point format.}
-	\end{figure}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.8\textwidth]{figures/float.png}
+	\caption{Illustration of standard floating-point format.}
+\end{figure}
 
-	\begin{figure}[H]
-    	\centering
-    	\includegraphics[width=0.8\textwidth]{figures/binary-formats.png}
-    	\caption{Comparison of binary formats used in neural network computations.}
-	\end{figure}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.8\textwidth]{figures/binary-formats.png}
+	\caption{Comparison of binary formats used in neural network computations.}
+\end{figure}
 
-	\section{Related Work}
+\section{Related Work}
 
-	Prior research in this domain can be broadly classified into two categories:
+Prior research in this domain can be broadly classified into two categories:
 
-	\subsection*{Quantization During Training}
-	Several studies have explored training neural networks with reduced precision directly. Notable contributions include:
-	\begin{itemize}
-    	\item \textbf{Mixed Precision Training}, which leverages float16 arithmetic for speed while maintaining float32 master weights \cite{micikevicius2017mixed}.
-    	\item \textbf{DoReFa-Net}, which quantizes weights, activations, and gradients to arbitrary bitwidths \cite{zhou2018dorefa}.
-    	\item \textbf{Q-BERT}, a quantized BERT model that maintains accuracy using only 4-bit weights \cite{shen2020qbert}.
-	\end{itemize}
+\subsection*{Quantization During Training}
+Several studies have explored training neural networks with reduced precision
+directly. Notable contributions include:
+\begin{itemize}
+	\item \textbf{Mixed Precision Training}, which leverages float16 arithmetic for speed while maintaining float32 master weights~\cite{micikevicius2017mixed}.
+	\item \textbf{DoReFa-Net}, which quantizes weights, activations, and gradients to arbitrary bitwidths~\cite{zhou2018dorefa}.
+	\item \textbf{Q-BERT}, a quantized BERT model that maintains accuracy using only 4-bit weights~\cite{shen2020qbert}.
+\end{itemize}
 
-	\subsection*{Post-Training Quantization}
-	Other approaches focus on converting pretrained models into lower-precision equivalents:
-	\begin{itemize}
-    	\item \textbf{Integer-Only Quantization} using symmetric quantization scales \cite{jacob2018quantization}.
-    	\item \textbf{GPTQ}, a method for quantizing large transformer models without retraining \cite{frantar2022gptq}.
-    	\item \textbf{SmoothQuant}, which scales activations to better match weight ranges during quantization \cite{xiao2024smoothquant}.
-	\end{itemize}
+\subsection*{Post-Training Quantization}
+Other approaches focus on converting pretrained models into lower-precision
+equivalents:
+\begin{itemize}
+	\item \textbf{Integer-Only Quantization} using symmetric quantization scales~\cite{jacob2018quantization}.
+	\item \textbf{GPTQ}, a method for quantizing large transformer models without retraining~\cite{frantar2022gptq}.
+	\item \textbf{SmoothQuant}, which scales activations to better match weight ranges during quantization~\cite{xiao2024smoothquant}.
+\end{itemize}
 
-	\section{Experimental Design}
+\section{Experimental Design}
 
-	We trained a simple fully connected neural network on the MNIST dataset, consisting of 60,000 training and 10,000 test grayscale images of handwritten digits (28×28 pixels). Model training was performed under varying parameter bitwidths, with cross-validation to ensure robustness.
+We trained a simple fully connected neural network on the MNIST dataset,
+consisting of 60,000 training and 10,000 test grayscale images of handwritten
+digits (28×28 pixels). Model training was performed under varying parameter
+bitwidths, with cross-validation to ensure robustness.
 
-	\begin{figure}[H]
-    	\centering
-    	\includegraphics[width=0.75\textwidth]{figures/mnist.png}
-    	\caption{Sample images from the MNIST dataset.}
-	\end{figure}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.75\textwidth]{figures/mnist.png}
+	\caption{Sample images from the MNIST dataset.}
+\end{figure}
 
-	\section{Results}
+\section{Results}
 
-	\subsection*{Accuracy Across Bitwidths}
+\subsection*{Accuracy Across Bitwidths}
 
-	\begin{figure}[H]
-    	\centering
-    	\includegraphics[width=0.75\textwidth]{figures/trainingAndInference.png}
-    	\caption{Model accuracy during training and inference under different precision settings.}
-	\end{figure}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.75\textwidth]{figures/trainingAndInference.png}
+	\caption{Model accuracy during training and inference under different precision settings.}
+\end{figure}
 
-	\subsection*{Training and Inference Time}
+\subsection*{Training and Inference Time}
 
-	\begin{figure}[H]
-    	\centering
-    	\includegraphics[width=0.75\textwidth]{figures/times.png}
-    	\caption{Execution times for various precision configurations.}
-	\end{figure}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.75\textwidth]{figures/times.png}
+	\caption{Execution times for various precision configurations.}
+\end{figure}
 
-	\subsection*{Quantization After Training}
+\subsection*{Quantization After Training}
 
-	\begin{figure}[H]
-    	\centering
-    	\includegraphics[width=0.75\textwidth]{figures/inferenceOnly.png}
-    	\caption{Inference accuracy using float64-trained weights followed by quantization.}
-	\end{figure}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.75\textwidth]{figures/inferenceOnly.png}
+	\caption{Inference accuracy using float64-trained weights followed by quantization.}
+\end{figure}
 
-	\subsection*{Automatic Mixed Precision and Gradient Clipping}
-	\begin{figure}[H]
-    	\centering
-    	\includegraphics[width=0.75\textwidth]{figures/gradclip_32.png}
-    	\caption{Inference accuracy using float32-trained weights with AMP and gradient clipping.}
-	\end{figure}
+\subsection*{Automatic Mixed Precision and Gradient Clipping}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.75\textwidth]{figures/gradclip_32.png}
+	\caption{Inference accuracy using float32-trained weights with AMP and gradient clipping.}
+\end{figure}
 
-	\subsection*{Effect of Decimal Rounding}
+\subsection*{Effect of Decimal Rounding}
 
-	\begin{figure}[H]
-    	\centering
-    	\includegraphics[width=0.75\textwidth]{figures/118_accuracy.png}
-    	\caption{Accuracy vs. number of decimal digits retained in weights.}
-	\end{figure}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.75\textwidth]{figures/118_accuracy.png}
+	\caption{Accuracy vs.\ number of decimal digits retained in weights.}
+\end{figure}
 
-	\section{Discussion}
+\section{Discussion}
 
-	Our results indicate that networks trained and evaluated with as low as 16-bit precision can achieve comparable performance to their high-precision counterparts. Moreover, rounding pretrained weights to just 3 decimal digits preserves full accuracy, opening the door to aggressive post-training quantization.
+Our results indicate that networks trained and evaluated with as low as 16-bit
+precision can achieve comparable performance to their high-precision
+counterparts. Moreover, rounding pretrained weights to just 3 decimal digits
+preserves full accuracy, opening the door to aggressive post-training
+quantization.
 
-	This is particularly relevant for edge devices and real-time applications where memory and compute constraints are paramount.
+This is particularly relevant for edge devices and real-time applications where
+memory and compute constraints are paramount.
 
-	\section{Conclusion and Future Directions}
+\section{Conclusion and Future Directions}
 
-	This work confirms that for relatively simple tasks like MNIST classification, significant reductions in parameter precision can be achieved without compromising performance. Our future efforts will extend this analysis to more complex datasets (e.g., CIFAR-10, ImageNet) and deeper architectures, and explore advanced quantization-aware training techniques.
+This work confirms that for relatively simple tasks like MNIST classification,
+significant reductions in parameter precision can be achieved without
+compromising performance. Our future efforts will extend this analysis to more
+complex datasets (e.g., CIFAR-10, ImageNet) and deeper architectures, and
+explore advanced quantization-aware training techniques.
 
-
-	
-
-	\newpage
-	\printbibliography
+\newpage
+\printbibliography%
 \end{document}
