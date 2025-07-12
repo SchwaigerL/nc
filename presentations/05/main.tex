@@ -43,7 +43,8 @@
   \vspace{0.5cm}
   \textbf{This presentation:}
   \begin{itemize}
-    \item Quantization in \textit{all} numerical domains: Weights, Activations, and Gradients.
+    \item Quantization in \textit{all} numerical domains: Weights, Activations, and
+          Gradients.
     \item Consideration of \textit{task complexity} $\rightarrow$ dataset and classes.
     \item \textbf{DoReFa-Net}\cite{zhou2016dorefa}: Low-bit running and training of CNN on ImageNet-scale models.
   \end{itemize}
@@ -63,18 +64,21 @@
     \item \textbf{Forward pass}
           \begin{itemize}
             \item Quantize current weights $W^{full-prec}\xrightarrow[]{f_\omega}W^{bit-width}$
-            \item Propagate activations, then quantize them $A^{real-valued}\xrightarrow[]{f_\alpha}A^{bit-width}$
+            \item Propagate activations, then quantize them
+                  $A^{real-valued}\xrightarrow[]{f_\alpha}A^{bit-width}$
           \end{itemize}
     \item \textbf{Backward pass}
           \begin{itemize}
-            \item Back-propagate loss - each gradient block is quantized $G\xrightarrow[]{f_\gamma}G^{bit-width}$
+            \item Back-propagate loss - each gradient block is quantized
+                  $G\xrightarrow[]{f_\gamma}G^{bit-width}$
           \end{itemize}
   \end{enumerate}
 \end{frame}
 
 \begin{frame}{DoReFa-Net: First \& Last FC Layers}
   \begin{itemize}
-    \item Quantizing either layer costs $\approx 0.3$pp on SVHN Model A. Smaller models suffer more (up to $1$ pp).
+    \item Quantizing either layer costs $\approx 0.3$pp on SVHN Model A. Smaller models
+          suffer more (up to $1$ pp).
     \item Paper keeps those layers full-precision (fp32) in ImageNet runs.
   \end{itemize}
 \end{frame}
@@ -136,92 +140,12 @@
 
 \begin{frame}{DoReFa-Net: Learnings \& Outlook}
   \begin{itemize}
-    \item Gradient precision (min. 6 bits) is the bottleneck - mixed precision was the next step.
-    \item Quantization is not \textit{just for deployment} - it can be applied inside the training pipeline.
+    \item Gradient precision (min. 6 bits) is the bottleneck - mixed precision was the
+          next step.
+    \item Quantization is not \textit{just for deployment} - it can be applied inside the
+          training pipeline.
   \end{itemize}
 \end{frame}
-
-% \begin{frame}{DoReFa-Net: Introduction}
-%   \textbf{What are we doing:} Change parameter precision of ANN.\\
-%   \vspace{0.5cm}
-%   \textbf{This presentation:} Look at the effects of
-%   \begin{enumerate}
-%     \item lower precision in training and inference.
-%     \item lower precision only in inference.
-%   \end{enumerate}
-% \end{frame}
-
-% \begin{frame}{DoReFa-Net: Network Structure}
-%   \textbf{MNIST:} $28 \times 28$ pixel images of handwritten digits.
-
-%   \begin{figure}
-%     \includegraphics[width=0.7\textwidth]{figures/mnist.png}
-%     \caption{MNIST dataset example images~\cite{mnistImage}.}
-%   \end{figure}
-% \end{frame}
-
-% \begin{frame}{Recap and Today}
-%   \begin{itemize}
-%     \item Want to optimize the parameters $\omega$ and $b$.
-%     \item Need a target $y$ and error metric (loss $L$) to judge the networks predictions
-%           $\hat y$.
-%     \item Many intermediate results need to be stored for efficient gradient computation.
-%   \end{itemize}
-
-%   \begin{align*}
-%     L(f(x_1, x_2)) & = (\sigma(\omega^T x + b) - y) ^2 \\
-%                    & = (\sigma(a) - y) ^ 2             \\
-%                    & = (\hat y - y) ^ 2
-%   \end{align*}
-%   \begin{alignat*}{3}
-%     \pdv{L}{\omega_1} & = \pdv{L}{\sigma} & \cdot & \pdv{\sigma}{a}      & \cdot & \pdv{a}{\omega_1} \\
-%                       & = 2(\hat y - y)~~ & \cdot & \odv{}{a}\sigma(a)~~ & \cdot & x_1
-%   \end{alignat*}
-% \end{frame}
-
-% \begin{frame}{Data and Network Structure}
-%   Model evaluation is done with with 5-fold CV.\\
-
-%   \begin{figure}
-%     \includegraphics[width=0.8\textwidth]{figures/mlp.png}
-%     \caption{Structure of simple NN to classify MNIST numbers.}
-%   \end{figure}
-% \end{frame}
-
-% \begin{frame}{Results - Training and Inference}
-%   \begin{figure}
-%     \includegraphics[width=0.7\textwidth]{figures/trainingAndInference.png}
-%     \caption{Model accuracies - trained and evaluated at each precision.}
-%   \end{figure}
-% \end{frame}
-
-% \begin{frame}{Results - Training and Inference Times}
-%   \begin{figure}
-%     \includegraphics[width=0.7\textwidth]{figures/times.png}
-%     \caption{Training and evaluation times.}
-%   \end{figure}
-% \end{frame}
-
-% \begin{frame}{Results - Inference-Only Testing}
-%   \begin{figure}
-%     \includegraphics[width=0.7\textwidth]{figures/inferenceOnly.png}
-%     \caption{Model accuracies - trained with float64 and post-training precision reduction.}
-%   \end{figure}
-% \end{frame}
-
-% \begin{frame}{Conclusion and Outlook}
-%   \textbf{Interpretation:} Simple task and simple network $\rightarrow$ almost no effets.\\
-%   \vspace{0.5cm}
-%   \textbf{Next Steps:}
-%   \begin{enumerate}
-%     \item Reduce precision even further $\rightarrow$ quantize lower than float16 (half
-%           precision).
-%     \item Mixed Precision Training $\rightarrow$ different bit-widths for different parts
-%           of the training process.
-%   \end{enumerate}
-% \end{frame}
-
-%%%%%%%%%%%%%%%%%%%%
 
 \begin{skipframecount}
   \begin{frame}[allowframebreaks]{References}
