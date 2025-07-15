@@ -3,7 +3,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath, amssymb}
 \usepackage{graphicx}
-\usepackage{hyperref}
+\usepackage[hidelinks]{hyperref}
 \usepackage{geometry}
 \usepackage{setspace}
 \usepackage{titlesec}
@@ -13,11 +13,10 @@
 \usepackage{csquotes}
 \usepackage{float}
 \usepackage{derivative}
-\usepackage{caption}
 \usepackage{subcaption}
-\usepackage{hyperref}
 
-\usepackage[style=nejm,
+\usepackage[
+	style=nejm,
 	citestyle=numeric-comp,
 	sorting=none,
 	doi=false,
@@ -49,7 +48,7 @@
 \maketitle
 
 \begin{abstract}
-	TODO
+	We study how the numerical precision of weights, activations, and gradients in neural networks can be reduced without sacrificing too much of the classification performance. Using MNIST as a dataset, we benchmark uniform 16–64-bit quantisation, mixed-precision formats, and post-training decimal rounding. The results reveal that (i) 16-bit end-to-end training preserves full accuracy for the MNIST dataset and the network used, (ii) three-decimal-place weight rounding while keeping 32-bit precision incurs minimal accuracy loss. These findings verify limits for memory- and energy-constrained usecases like inference in mobile devices.
 \end{abstract}
 
 \section{Introduction}
@@ -128,7 +127,7 @@ nonlinear activation function (e.g., sigmoid or ReLU).
 
 Training is conducted via backpropagation, where gradients of a loss function
 \( L(\hat{y}, y) \) with respect to the model parameters are computed. For
-example, using mean squared error:
+example, using the mean squared error:
 % \[
 % L(\hat{y}, y) = (\hat{y} - y)^2, \qquad \pdv{L}{\omega_i} = 2(\hat{y} - y) \cdot \odv{\sigma}{a} \cdot x_i.
 % \]
@@ -143,9 +142,9 @@ example, using mean squared error:
 	                  & = 2(\hat y - y)~~ &  & \odv{}{a}\sigma(a)~~ &  & x_1
 \end{alignat*}
 
-Memory and compute requirements during training are substantial, as gradients,
-activations, and parameters must be stored and updated iteratively. In
-contrast, inference requires only a forward pass, making it more amenable to
+Memory and computational requirements during training are substantial, as
+gradients, activations, and parameters must be stored and updated iteratively.
+In contrast, inference requires only a forward pass, making it more amenable to
 optimization via precision reduction.
 
 \section{Memory Efficiency and Numerical Formats}
@@ -154,18 +153,44 @@ To reduce memory usage and computational load, precision-aware techniques such
 as quantization and mixed-precision training are increasingly employed. Instead
 of using 32-bit or 64-bit floating-point formats, parameters can be stored in
 16-bit or even 8-bit fixed-point representations.
+Figure~\ref{fig:floatingPointFormat} depicts the general floating point format
+and terminology of significand, base, and exponent.
+Tables~\ref{tab:binary-bits} and~\ref{tab:binary-precision} provide an overview
+of the different floating point types and their respective characteristics.
 
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.8\textwidth]{figures/float.png}
-	\caption{Illustration of standard floating-point format.}
+	\caption{Illustration of standard floating-point format.}\label{fig:floatingPointFormat}
 \end{figure}
 
-\begin{figure}[H]
+\begin{table}[H]
 	\centering
-	\includegraphics[width=0.8\textwidth]{figures/binary-formats.png}
-	\caption{Comparison of binary formats used in neural network computations.}
-\end{figure}
+	\begin{tabular}{@{}lcccc@{}}
+		\toprule
+		\textbf{Type} & Sign & Exponent & Significand & Total \\
+		\midrule
+		Half  (FP16)  & 1    & 5        & 10          & 16    \\
+		Single (FP32) & 1    & 8        & 23          & 32    \\
+		Double (FP64) & 1    & 11       & 52          & 64    \\
+		\bottomrule
+	\end{tabular}
+	\caption{Field widths (in bits) of common IEEE754 formats (adapted from~\cite{fparithmetic}).}\label{tab:binary-bits}
+\end{table}
+
+\begin{table}[H]
+	\centering
+	\begin{tabular}{@{}lccc@{}}
+		\toprule
+		\textbf{Type} & Exponent bias & Precision (bits) & Decimal digits \\
+		\midrule
+		Half  (FP16)  & 15            & 11               & $\sim$3.3      \\
+		Single (FP32) & 127           & 24               & $\sim$7.2      \\
+		Double (FP64) & 1023          & 53               & $\sim$15.9     \\
+		\bottomrule
+	\end{tabular}
+	\caption{Range and precision characteristics of the same formats (adapted from~\cite{fparithmetic}).}\label{tab:binary-precision}
+\end{table}
 
 \section{Related Work}
 
@@ -193,66 +218,104 @@ equivalents:
 
 We trained a simple fully connected neural network on the MNIST dataset,
 consisting of 60,000 training and 10,000 test grayscale images of handwritten
-digits (28×28 pixels). Model training was performed under varying parameter
-bitwidths, with cross-validation to ensure robustness.
+digits (28×28 pixels, see figure~\ref{fig:mnistSample}). Model training was
+performed under varying parameter bitwidths, and 5-fold cross-validation to
+evaluate the model performance. The structure of the MLP is depicted in
+figure~\ref{fig:mlpStructure}.
 
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=0.75\textwidth]{figures/mnist.png}
-	\caption{Sample images from the MNIST dataset.}
+	\includegraphics[width=0.85\textwidth]{figures/mnist.png}
+	\caption{Sample images from the MNIST dataset.}\label{fig:mnistSample}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.85\textwidth]{figures/mlpStruc.png}
+	\caption{MLP structure used in the experiments.}\label{fig:mlpStructure}
 \end{figure}
 
 \section{Results}
+In the first experiment, every floating-point tensor that is used inside the
+training loop was converted to a lower precision data type. This therefore
+includes the weights and biases, activations, gradients, optimizer states, etc.
+The types tried were float64, float32, and float16.
 
 \subsection*{Accuracy Across Bitwidths}
-
+Figure~\ref{fig:modelAccTrainAndInf} shows how the accuracy changed after the
+models were trained on the different precision settings. Keep in mind that the
+y-axis is not starting from zero, so the absolute height differences are
+amplified visually, though the delta is only around $.1$ percent. Re-training
+the models and re-evaluating them has also lead to the accuracies being
+``reversed'', meaning the float64 model had the least accuracy. It is safe to
+assume that the model accuracy has neither decreased, nor increased.
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=0.75\textwidth]{figures/trainingAndInference.png}
-	\caption{Model accuracy during training and inference under different precision settings.}
+	\includegraphics[width=0.85\textwidth]{figures/trainingAndInference.png}
+	\caption{Model accuracy evaluated after training with the different precisions.}\label{fig:modelAccTrainAndInf}
 \end{figure}
 
 \subsection*{Training and Inference Time}
-
+Also analyzed were the times needed for both the training and inference.
+Figure~\ref{fig:modelEvalTrainTimes} depicts the times measured in the training
+loop and later on at the inference stage. Again, the times are almost identical
+in both regards, and neither a real speed-up nor a slow-down has been measured.
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=0.75\textwidth]{figures/times.png}
-	\caption{Execution times for various precision configurations.}
+	\includegraphics[width=0.85\textwidth]{figures/times.png}
+	\caption{Training and evaluation times for the different precisions.}\label{fig:modelEvalTrainTimes}
 \end{figure}
 
-\subsection*{Quantization After Training}
-
+\subsection*{Inference-Only Testing}
+This third experiment was conducted to test a possible post-training precision
+reduction. For this, the model was trained on the highest precision (float64)
+and then quantized at the inference stage.
+Figure~\ref{fig:inferenceOnlyTesting} shows that the accuracy of the baseline
+(float64 training AND inference) is maintained as the precision is decreased at
+the later stages. In contrast to the \textit{Accuracy Across Bitwidths}
+experiment, there are no fluctuations at all because for the lower precisions,
+there was no new model trained.
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=0.75\textwidth]{figures/inferenceOnly.png}
-	\caption{Inference accuracy using float64-trained weights followed by quantization.}
+	\includegraphics[width=0.85\textwidth]{figures/inferenceOnly.png}
+	\caption{Inference accuracy using float64-trained weights followed by quantization.}\label{fig:inferenceOnlyTesting}
 \end{figure}
 
 \subsection*{Automatic Mixed Precision and Gradient Clipping}
+As a next experiment, \dots %Sayed, also use the other images?
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=0.75\textwidth]{figures/gradclip_32.png}
+	\includegraphics[width=0.85\textwidth]{figures/gradclip_32.png}
 	\caption{Inference accuracy using float32-trained weights with AMP and gradient clipping.}
 \end{figure}
 
 \subsection*{Effect of Decimal Rounding}
-
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=0.75\textwidth]{figures/118_accuracy.png}
+	\includegraphics[width=0.85\textwidth]{figures/118_accuracy.png}
 	\caption{Accuracy vs.\ number of decimal digits retained in weights.}
 \end{figure}
 
+\section{Summary}
+\begin{itemize}
+	\item \textbf{16-bit is enough for this classification task}: End-to-end float16 preserved the accuracy.
+	\item \textbf{Three decimals suffice}: Storing weights down to fractional length $3$ caused no visible accuracy loss.
+\end{itemize}
+
 \section{Discussion}
 
-Our results indicate that networks trained and evaluated with as low as 16-bit
-precision can achieve comparable performance to their high-precision
-counterparts. Moreover, rounding pretrained weights to just 3 decimal digits
-preserves full accuracy, opening the door to aggressive post-training
-quantization.
+The results of the first experiments have shown that either the selected task
+(MNIST classification) was not complex enough to be affected by the decrease in
+accuracy, or the accuracy would need to be decreased even further than float16.
+
+Otherwise, the results generally indicate that networks trained and evaluated
+with as low as 16-bit precision can achieve comparable performance to their
+high-precision counterparts. Moreover, rounding pretrained weights to just 3
+decimal digits preserves full accuracy, opening the door to aggressive
+post-training quantization.
 
 This is particularly relevant for edge devices and real-time applications where
-memory and compute constraints are paramount.
+memory and compute constraints are more relevant.
 
 \section{Conclusion and Future Directions}
 
