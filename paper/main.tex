@@ -410,18 +410,22 @@ neural networks to reduced parameter precision, particularly for simpler tasks
 like MNIST classification. Key findings include:
 
 \begin{itemize}
-	\item \textbf{Precision Reduction During Training and Inference}: Training and evaluating
-	      models with 16-bit floating-point (FP16) precision preserved accuracy comparable to
-	      higher-precision formats (FP32 and FP64). This suggests that for tasks of similar
-	      complexity, FP16 is sufficient, offering potential memory and computational savings
-	      without sacrificing performance.
+	\item \textbf{Precision Reduction During Training and Inference}: Training and
+	      evaluating models with 16-bit floating-point (FP16) precision preserved accuracy
+	      comparable to higher-precision formats (FP32 and FP64). This suggests that for
+	      tasks of similar complexity, FP16 is sufficient, offering potential memory and
+	      computational savings without sacrificing performance.
 
 	\item \textbf{Post-Training Quantization}: Reducing precision only during inference, after
 	      training with high-precision (FP64), maintained baseline accuracy. This is
 	      particularly valuable for deployment scenarios where training is done on powerful
 	      hardware, but inference occurs on resource-constrained devices.
 
-	\item \textbf{Mixed-Precision:} Training and Gradient Clipping: TODO
+	\item \textbf{Mixed-Precision:} Training with mixed precision and Gradient Clipping
+		  resulted in similar test accuracy scores as precision reduction during training
+		  as well as post-training quantization. No significant decrease in model
+		  performance accuracy was detected. The train and test times were similar,
+		  regardless of using FP32, FP16 or a mix of both.
 
 	\item \textbf{Weight Rounding:} Rounding trained weights to just three decimal digits
 	      (approximately 11 bits) achieved full accuracy, highlighting the potential for
