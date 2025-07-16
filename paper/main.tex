@@ -207,7 +207,7 @@ Prior research in this domain can be broadly classified into two categories:
 Several studies have explored training neural networks with reduced precision
 directly. Notable contributions include:
 \begin{itemize}
-	\item \textbf{Mixed Precision Training}, which leverages float16 arithmetic for speed while maintaining float32 master weights~\cite{micikevicius2017mixed}.
+	\item \textbf{Mixed Precision Training}, which leverages FP16 arithmetic for speed while maintaining FP32 master weights~\cite{micikevicius2017mixed}.
 	\item \textbf{DoReFa-Net}, which quantizes weights, activations, and gradients to arbitrary bitwidths~\cite{zhou2018dorefa}.
 	\item \textbf{Q-BERT}, a quantized BERT model that maintains accuracy using only 4-bit weights~\cite{shen2020qbert}.
 \end{itemize}
@@ -249,15 +249,15 @@ figure~\ref{fig:mlpStructure}.
 In the first experiment, every floating-point tensor that is used inside the
 training loop was converted to a lower precision data type. This therefore
 includes the weights and biases, activations, gradients, optimizer states, etc.
-The types tried were float64, float32, and float16.
+The types tried were FP64, FP32, and FP16.
 
 \subsection*{Accuracy Across Bitwidths}
 Figure~\ref{fig:modelAccTrainAndInf} shows how the accuracy changed after the
 models were trained on the different precision settings. Keep in mind that the
 y-axis is not starting from zero, so the absolute height differences are
-amplified visually, though the delta is only around $.1$ percent. Re-training
-the models and re-evaluating them has also lead to the accuracies being
-``reversed'', meaning the float64 model had the least accuracy. It is safe to
+amplified visually, though the delta is only around $.1\%$. Re-training the
+models and re-evaluating them has also lead to the accuracies being
+``reversed'', meaning the FP64 model had the least accuracy. It is safe to
 assume that the model accuracy has neither decreased, nor increased.
 \begin{figure}[H]
 	\centering
@@ -278,28 +278,27 @@ in both regards, and neither a real speed-up nor a slow-down has been measured.
 
 \subsection*{Inference-Only Testing}
 This third experiment was conducted to test a possible post-training precision
-reduction. For this, the model was trained on the highest precision (float64)
-and then quantized at the inference stage.
-Figure~\ref{fig:inferenceOnlyTesting} shows that the accuracy of the baseline
-(float64 training AND inference) is maintained as the precision is decreased at
-the later stages. In contrast to the \textit{Accuracy Across Bitwidths}
-experiment, there are no fluctuations at all because for the lower precisions,
-there was no new model trained.
+reduction. For this, the model was trained on the highest precision (FP64) and
+then quantized at the inference stage. Figure~\ref{fig:inferenceOnlyTesting}
+shows that the accuracy of the baseline (FP64 training AND inference) is
+maintained as the precision is decreased at the later stages. In contrast to
+the \textit{Accuracy Across Bitwidths} experiment, there are no fluctuations at
+all because for the lower precisions, there was no new model trained.
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.85\textwidth]{figures/inferenceOnly.png}
-	\caption{Inference accuracy using float64-trained weights followed by quantization.}\label{fig:inferenceOnlyTesting}
+	\caption{Inference accuracy using FP64-trained weights followed by quantization.}\label{fig:inferenceOnlyTesting}
 \end{figure}
 
 \subsection*{Automatic Mixed Precision and Gradient Clipping}
 Automatic Mixed Precision (AMP) accelerates deep learning training by using
-both float16 and float32 data types reducing memory usage and increasing
-computational speed. However, float16’s limited dynamic range can cause
-numerical instability, especially during backpropagation. To address this,
-Gradient Clipping is used to cap the magnitude of gradients (either globally or
-per element) preventing extreme updates that could hinder convergence.
-Together, AMP and gradient clipping enable efficient, stable training by
-balancing performance and numerical precision.
+both FP16 and FP32 data types reducing memory usage and increasing
+computational speed. However, FP16’s limited dynamic range can cause numerical
+instability, especially during backpropagation. To address this, Gradient
+Clipping is used to cap the magnitude of gradients (either globally or per
+element) preventing extreme updates that could hinder convergence. Together,
+AMP and gradient clipping enable efficient, stable training by balancing
+performance and numerical precision.
 
 First step is using global norm clipping, all gradients are collectively scaled
 to ensure their combined norm does not exceed a specified threshold, promoting
@@ -401,14 +400,14 @@ performing model for inference.
 
 \section{Summary}
 % \begin{itemize}
-% 	\item \textbf{16-bit is enough for this classification task}: End-to-end float16 preserved the accuracy.
+% 	\item \textbf{16-bit is enough for this classification task}: End-to-end FP16 preserved the accuracy.
 % 	\item \textbf{Three decimals suffice}: Storing weights down to fractional length $3$ caused no visible accuracy loss.
 % \end{itemize}
 
 % \section{Discussion}
 % The results of the first experiments have shown that either the selected task (MNIST
 % classification) was not complex enough to be affected by the decrease in accuracy, or the
-% accuracy would need to be decreased even further than float16. Otherwise, the results
+% accuracy would need to be decreased even further than FP16. Otherwise, the results
 % generally indicate that networks trained and evaluated with as low as 16-bit precision can
 % achieve comparable performance to their high-precision counterparts. Moreover, rounding
 % pretrained weights to just 3 decimal digits preserves full accuracy, opening the door to
@@ -432,10 +431,10 @@ like MNIST classification. Key findings include:
 	      hardware, but inference occurs on resource-constrained devices.
 
 	\item \textbf{Mixed-Precision:} Training with mixed precision and Gradient Clipping
-		  resulted in similar test accuracy scores as precision reduction during training
-		  as well as post-training quantization. No significant decrease in model
-		  performance accuracy was detected. The train and test times were similar,
-		  regardless of using FP32, FP16 or a mix of both.
+	      resulted in similar test accuracy scores as precision reduction during training
+	      as well as post-training quantization. No significant decrease in model
+	      performance accuracy was detected. The train and test times were similar,
+	      regardless of using FP32, FP16 or a mix of both.
 
 	\item \textbf{Weight Rounding:} Rounding trained weights to just three decimal digits
 	      (approximately 11 bits) achieved full accuracy, highlighting the potential for
