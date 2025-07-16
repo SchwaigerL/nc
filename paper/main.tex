@@ -290,11 +290,57 @@ As a next experiment, \dots %Sayed, also use the other images?
 \end{figure}
 
 \subsection*{Effect of Decimal Rounding}
+
+A non training related issue is the storage of the NN parameters. Usually, the parameters
+are stored in the format that was chosen to train with. This is best for reproducibility
+as well as accuracy when doing inference with the trained model weights. The datatype  
+precision has a higher impact during training though, which begs the question if one could
+omit precision from the model weights. In this section, we explore a naive quantization
+method: Rounding to a fixed number of decimals. With significantly little decimals and a
+reasonable range for the integer part, one could store only the significant and provide
+base as well as exponent as metadata. 
+
+The first step is to examine the distribution of parameter values. By the standard
+deviation around modes one can make an educated guess as to how many decimals are needed.
+The range will decide how large the integer part may get. Reading from the 
+distribution is just a heuristic though, so we will also test the hypotheses.
+
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.85\textwidth]{figures/118_dist.png}
+	\caption{
+		Distribution of model weights in each layer. The values are in $[-0.5, 0.5]$,
+		this means no integer part is needed in this example. Generally, with normalized data
+		and the quite popular L1-/L2-/Batch-Norm layers, weight values in $[-1, 1]$ is to be expected.}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.85\textwidth]{figures/118_dist2.png}
+	\caption{Distribution of model weights in each layer after rounding to two decimals.
+	This appears to be a good approximation already.}
+	\label{fig:118_2}
+\end{figure}
+
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.85\textwidth]{figures/118_accuracy.png}
-	\caption{Accuracy vs.\ number of decimal digits retained in weights.}
+	\caption{Test Accuracy vs.\ number of decimal digits retained in weights.}
+	\label{fig:118_acc}
 \end{figure}
+
+Figure~\ref{fig:118_acc} shows how rounding the decimal part affects the test accuracy.
+For just one decimal the model has a maximum of 19 different weights at its disposal,
+which makes the model have only 10\% accuracy, random guessing with a 10 class problem.
+Two decimals perform significantly better. At 70\% accuracy the model gets close to the
+full precision 88\% accuracy with 32 bit floating point. Making and educated guess on
+distribution such as Figure~\ref{fig:118_2} seems to be a good heuristic for this example.
+At just 3 decimals, the full 32 bit precision is reached. Thus we can conclude that with
+just 10 bit for representing 3 decimals, no bits for the integer part and one additional
+bit for the sign, only 11 bit must be stored to have the best performing model for
+inference.
+
 
 \section{Summary}
 \begin{itemize}
