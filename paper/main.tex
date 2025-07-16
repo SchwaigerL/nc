@@ -298,7 +298,10 @@ precision has a higher impact during training though, which begs the question if
 omit precision from the model weights. In this section, we explore a naive quantization
 method: Rounding to a fixed number of decimals. With significantly little decimals and a
 reasonable range for the integer part, one could store only the significant and provide
-base as well as exponent as metadata. 
+base as well as exponent as metadata. When loading the model, the weights are converted
+back to floating point, with whatever precision is desired. Only the weights are quantized;
+the input data, as well are the values propagated through the network are at full
+precision.
 
 The first step is to examine the distribution of parameter values. By the standard
 deviation around modes one can make an educated guess as to how many decimals are needed.
