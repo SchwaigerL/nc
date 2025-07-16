@@ -282,12 +282,58 @@ there was no new model trained.
 \end{figure}
 
 \subsection*{Automatic Mixed Precision and Gradient Clipping}
-As a next experiment, \dots %Sayed, also use the other images?
+Automatic Mixed Precision (AMP) accelerates deep learning training by using both float16
+and float32 data types reducing memory usage and increasing computational speed. 
+However, float16’s limited dynamic range can cause numerical instability,
+especially during backpropagation. To address this, Gradient Clipping is used to cap 
+the magnitude of gradients—either globally or per element—preventing extreme updates
+that could hinder convergence. Together, AMP and gradient clipping enable efficient,
+stable training by balancing performance and numerical precision.
+
+First step is using global norm clipping, all gradients are collectively scaled to ensure
+their combined norm does not exceed a specified threshold, promoting stable updates
+across the network. In second step per-element clipping constrains each individual gradient
+component within a fixed range, directly limiting extreme values.
+These methods are evaluated under Automatic Mixed Precision (AMP) to compare their impact on
+training stability, model accuracy, and computation time across different precision types.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.85\textwidth]{figures/FP16_32_clipping.png}
+	\caption{Affect of Gradient Norm on accuracy, training and testing timings.
+                 Accuracy is virtually the same between FP16 and FP32 when gradient clipping is used
+		 validating the stability of AMP and gradient scaling.
+                 Eval time is nearly identical for both formats, as evaluation involves fewer operations
+		 and less intense memory bandwidth usage.}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.85\textwidth]{figures/gradclip_16.png}
+	\caption{Effect of Per-Element Gradient Clipping on FP16.
+                 Accuracy vs Training & Eval Time}
+        \label{fig:grad16}
+\end{figure}
+
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.85\textwidth]{figures/gradclip_32.png}
-	\caption{Inference accuracy using float32-trained weights with AMP and gradient clipping.}
+	\caption{Effect of Per-Element Gradient Clipping on FP32.
+                 Accuracy vs Training & Eval Time}
+        \label{fig:grad32}
 \end{figure}
+
+Figure~\ref{fig:grad16} shows accuracy peaked at 97.07% with a clipping value of 0.5, 
+while the lowest accuracy (96.55%) occurred at clip=0.01, suggesting that very small
+clip values may overly restrict gradient updates and hurt learning.
+Training time ranged indicating that moderate clipping supports efficient convergence.
+Evaluation time remained stable across all clip values (around 2.01s to 2.16s),
+showing that clipping primarily impacts training rather than inference performance. 
+Also Figure~\ref{fig:grad32} shows that accuracy was most stable across all clip values
+with the highest accuracy at clip=0.5, demonstrating its robustness to gradient clipping
+variations. Training time suggesting that larger clip values can speed up convergence
+without sacrificing stability.
+Evaluation time confirming that clipping had minimal effect on inference time.
 
 \subsection*{Effect of Decimal Rounding}
 
