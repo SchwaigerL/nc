@@ -301,7 +301,7 @@ and computation time across different precision types.
 
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=0.85\textwidth]{figures/FP16_32_clipping.png}
+	\includegraphics[width=0.95\textwidth]{figures/FP16_32_clipping.png}
 	\caption{Affect of Gradient Norm on accuracy, training and testing timings.
 		Accuracy is virtually the same between FP16 and FP32 when gradient clipping is used
 		validating the stability of AMP and gradient scaling.
@@ -311,18 +311,14 @@ and computation time across different precision types.
 
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=0.85\textwidth]{figures/gradclip_16.png}
-	\caption{Effect of Per-Element Gradient Clipping on FP16.
-		Accuracy vs Training & Eval Time}
-	\label{fig:grad16}
+	\includegraphics[width=0.95\textwidth]{figures/gradclip_16.png}
+	\caption{Effect of Per-Element Gradient Clipping on FP16. Accuracy vs Training \& Eval Time}\label{fig:grad16}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=0.85\textwidth]{figures/gradclip_32.png}
-	\caption{Effect of Per-Element Gradient Clipping on FP32.
-		Accuracy vs Training & Eval Time}
-	\label{fig:grad32}
+	\includegraphics[width=0.95\textwidth]{figures/gradclip_32.png}
+	\caption{Effect of Per-Element Gradient Clipping on FP32. Accuracy vs Training \& Eval Time}\label{fig:grad32}
 \end{figure}
 
 Figure~\ref{fig:grad16} shows accuracy peaked at 97.07\% with a clipping value
@@ -372,15 +368,13 @@ the hypotheses.
 	\centering
 	\includegraphics[width=0.85\textwidth]{figures/118_dist2.png}
 	\caption{Distribution of model weights in each layer after rounding to two decimals.
-		This appears to be a good approximation already.}
-	\label{fig:118_2}
+		This appears to be a good approximation already.}\label{fig:118_2}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.85\textwidth]{figures/118_accuracy.png}
-	\caption{Test Accuracy vs.\ number of decimal digits retained in weights.}
-	\label{fig:118_acc}
+	\caption{Test Accuracy vs.\ number of decimal digits retained in weights.}\label{fig:118_acc}
 \end{figure}
 
 Figure~\ref{fig:118_acc} shows how rounding the decimal part affects the test
