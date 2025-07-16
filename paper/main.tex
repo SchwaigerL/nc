@@ -346,33 +346,89 @@ inference.
 
 
 \section{Summary}
+% \begin{itemize}
+% 	\item \textbf{16-bit is enough for this classification task}: End-to-end float16 preserved the accuracy.
+% 	\item \textbf{Three decimals suffice}: Storing weights down to fractional length $3$ caused no visible accuracy loss.
+% \end{itemize}
+
+% \section{Discussion}
+% The results of the first experiments have shown that either the selected task (MNIST
+% classification) was not complex enough to be affected by the decrease in accuracy, or the
+% accuracy would need to be decreased even further than float16. Otherwise, the results
+% generally indicate that networks trained and evaluated with as low as 16-bit precision can
+% achieve comparable performance to their high-precision counterparts. Moreover, rounding
+% pretrained weights to just 3 decimal digits preserves full accuracy, opening the door to
+% aggressive post-training quantization.This is particularly relevant for edge devices and
+% real-time applications where memory and compute constraints are more relevant.
+
+The experimental results presented in this paper demonstrate the robustness of neural
+networks to reduced parameter precision, particularly for simpler tasks like MNIST
+classification. Key findings include:
+
 \begin{itemize}
-	\item \textbf{16-bit is enough for this classification task}: End-to-end float16 preserved the accuracy.
-	\item \textbf{Three decimals suffice}: Storing weights down to fractional length $3$ caused no visible accuracy loss.
+	\item \textbf{Precision Reduction During Training and Inference}: Training and evaluating
+	models with 16-bit floating-point (FP16) precision preserved accuracy comparable to
+	higher-precision formats (FP32 and FP64). This suggests that for tasks of similar
+	complexity, FP16 is sufficient, offering potential memory and computational savings
+	without sacrificing performance.
+
+	\item \textbf{Post-Training Quantization}: Reducing precision only during inference, after
+	training with high-precision (FP64), maintained baseline accuracy. This is
+	particularly valuable for deployment scenarios where training is done on powerful
+	hardware, but inference occurs on resource-constrained devices.
+
+	\item \textbf{Mixed-Precision:} Training and Gradient Clipping: TODO
+
+	\item \textbf{Weight Rounding:} Rounding trained weights to just three decimal digits
+	(approximately 11 bits) achieved full accuracy, highlighting the potential for
+	aggressive quantization in storage-efficient model deployment. This finding is
+	significant for edge applications where memory footprint is critical.
 \end{itemize}
 
-\section{Discussion}
+However, the simplicity of the MNIST dataset and the small network architecture used in
+the experiments may limit the generalizability of these findings. More complex tasks
+(e.g., CIFAR-10, ImageNet) and deeper architectures (e.g., CNNs, Transformers) could
+exhibit greater sensitivity to precision reduction. Additionally, the impact of precision
+on training dynamics, such as gradient flow and convergence, was not deeply explored and
+could be a focus for future work.
 
-The results of the first experiments have shown that either the selected task
-(MNIST classification) was not complex enough to be affected by the decrease in
-accuracy, or the accuracy would need to be decreased even further than float16.
 
-Otherwise, the results generally indicate that networks trained and evaluated
-with as low as 16-bit precision can achieve comparable performance to their
-high-precision counterparts. Moreover, rounding pretrained weights to just 3
-decimal digits preserves full accuracy, opening the door to aggressive
-post-training quantization.
+\section{Conclusion}
 
-This is particularly relevant for edge devices and real-time applications where
-memory and compute constraints are more relevant.
+% This work confirms that for relatively simple tasks like MNIST classification,
+% significant reductions in parameter precision can be achieved without
+% compromising performance. Our future efforts will extend this analysis to more
+% complex datasets (e.g., CIFAR-10, ImageNet) and deeper architectures, and
+% explore advanced quantization-aware training techniques.
 
-\section{Conclusion and Future Directions}
+This study demonstrates that neural networks can maintain strong performance even under
+significant reductions in parameter precision, particularly for simpler tasks like MNIST
+classification. Key findings confirm that FP16 training and inference, post-training
+quantization, and aggressive weight rounding (down to three decimal digits) preserve model
+accuracy while improving memory and computational efficiency. These results are promising
+for deploying models in resource-constrained environments, such as edge devices and
+real-time applications.
 
-This work confirms that for relatively simple tasks like MNIST classification,
-significant reductions in parameter precision can be achieved without
-compromising performance. Our future efforts will extend this analysis to more
-complex datasets (e.g., CIFAR-10, ImageNet) and deeper architectures, and
-explore advanced quantization-aware training techniques.
+To build on these insights and expand their applicability, future work should focus on the
+following directions:
+
+\begin{itemize}
+\item \textbf{Complex Architectures and Datasets:} Future research should validate these
+findings on more complex models (e.g., CNNs, Transformers) and datasets (e.g., CIFAR-10,
+ImageNet) to assess the scalability of low-precision techniques.
+
+\item \textbf{Quantization-Aware Training:} Investigating advanced methods like learned
+quantization, non-uniform bit allocation, and dynamic precision adjustment could further
+optimize the trade-off between efficiency and accuracy.
+
+\item \textbf{Hardware-Specific Optimizations:} Exploring how reduced precision interacts
+with specialized hardware (e.g., TPUs, neuromorphic chips) could unlock new efficiency
+gains in real-world deployments.
+
+\item \textbf{Theoretical Understanding:} A deeper analysis of how precision affects
+gradient dynamics, convergence, and generalization could provide foundational insights for
+designing robust low-precision training algorithms.
+\end{itemize}
 
 \newpage
 \printbibliography%
