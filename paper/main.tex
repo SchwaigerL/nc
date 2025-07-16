@@ -48,7 +48,14 @@
 \maketitle
 
 \begin{abstract}
-	We study how the numerical precision of weights, activations, and gradients in neural networks can be reduced without sacrificing too much of the classification performance. Using MNIST as a dataset, we benchmark uniform 64-16-bit quantisation, mixed-precision formats, and post-training decimal rounding. The results reveal that (i) 16-bit end-to-end training preserves full accuracy for the MNIST dataset and the network used, (ii) three-decimal-place weight rounding while keeping 32-bit precision incurs minimal accuracy loss. These findings verify limits for memory- and energy-constrained usecases like inference in mobile devices.
+	We study how the numerical precision of weights, activations, and gradients in neural
+	networks can be reduced without sacrificing too much of the classification
+	performance. Using MNIST as a dataset, we benchmark uniform 64-16-bit quantisation,
+	mixed-precision formats, and post-training decimal rounding. The results reveal that
+	(i) 16-bit end-to-end training does not significantly decrease test accuracy for the
+	MNIST dataset and the network used, (ii) three-decimal-place weight rounding while
+	keeping 32-bit precision incurs minimal accuracy loss. These findings verify limits
+	for memory- and energy-constrained usecases like inference in mobile devices.
 \end{abstract}
 
 \section{Introduction}
@@ -214,6 +221,8 @@ equivalents:
 	\item \textbf{SmoothQuant}, which scales activations to better match weight ranges during quantization~\cite{xiao2024smoothquant}.
 \end{itemize}
 
+\newpage
+
 \section{Experimental Design}
 
 We trained a simple fully connected neural network on the MNIST dataset,
@@ -235,6 +244,7 @@ figure~\ref{fig:mlpStructure}.
 	\caption{MLP structure used in the experiments.}\label{fig:mlpStructure}
 \end{figure}
 
+\newpage
 \section{Results}
 In the first experiment, every floating-point tensor that is used inside the
 training loop was converted to a lower precision data type. This therefore
