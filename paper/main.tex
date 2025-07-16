@@ -282,78 +282,82 @@ there was no new model trained.
 \end{figure}
 
 \subsection*{Automatic Mixed Precision and Gradient Clipping}
-Automatic Mixed Precision (AMP) accelerates deep learning training by using both float16
-and float32 data types reducing memory usage and increasing computational speed. 
-However, float16’s limited dynamic range can cause numerical instability,
-especially during backpropagation. To address this, Gradient Clipping is used to cap 
-the magnitude of gradients—either globally or per element—preventing extreme updates
-that could hinder convergence. Together, AMP and gradient clipping enable efficient,
-stable training by balancing performance and numerical precision.
+Automatic Mixed Precision (AMP) accelerates deep learning training by using
+both float16 and float32 data types reducing memory usage and increasing
+computational speed. However, float16’s limited dynamic range can cause
+numerical instability, especially during backpropagation. To address this,
+Gradient Clipping is used to cap the magnitude of gradients—either globally or
+per element—preventing extreme updates that could hinder convergence. Together,
+AMP and gradient clipping enable efficient, stable training by balancing
+performance and numerical precision.
 
-First step is using global norm clipping, all gradients are collectively scaled to ensure
-their combined norm does not exceed a specified threshold, promoting stable updates
-across the network. In second step per-element clipping constrains each individual gradient
-component within a fixed range, directly limiting extreme values.
-These methods are evaluated under Automatic Mixed Precision (AMP) to compare their impact on
-training stability, model accuracy, and computation time across different precision types.
+First step is using global norm clipping, all gradients are collectively scaled
+to ensure their combined norm does not exceed a specified threshold, promoting
+stable updates across the network. In second step per-element clipping
+constrains each individual gradient component within a fixed range, directly
+limiting extreme values. These methods are evaluated under Automatic Mixed
+Precision (AMP) to compare their impact on training stability, model accuracy,
+and computation time across different precision types.
 
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.85\textwidth]{figures/FP16_32_clipping.png}
 	\caption{Affect of Gradient Norm on accuracy, training and testing timings.
-                 Accuracy is virtually the same between FP16 and FP32 when gradient clipping is used
-		 validating the stability of AMP and gradient scaling.
-                 Eval time is nearly identical for both formats, as evaluation involves fewer operations
-		 and less intense memory bandwidth usage.}
+		Accuracy is virtually the same between FP16 and FP32 when gradient clipping is used
+		validating the stability of AMP and gradient scaling.
+		Eval time is nearly identical for both formats, as evaluation involves fewer operations
+		and less intense memory bandwidth usage.}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.85\textwidth]{figures/gradclip_16.png}
 	\caption{Effect of Per-Element Gradient Clipping on FP16.
-                 Accuracy vs Training & Eval Time}
-        \label{fig:grad16}
+		Accuracy vs Training & Eval Time}
+	\label{fig:grad16}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.85\textwidth]{figures/gradclip_32.png}
 	\caption{Effect of Per-Element Gradient Clipping on FP32.
-                 Accuracy vs Training & Eval Time}
-        \label{fig:grad32}
+		Accuracy vs Training & Eval Time}
+	\label{fig:grad32}
 \end{figure}
 
-Figure~\ref{fig:grad16} shows accuracy peaked at 97.07% with a clipping value of 0.5, 
-while the lowest accuracy (96.55%) occurred at clip=0.01, suggesting that very small
-clip values may overly restrict gradient updates and hurt learning.
-Training time ranged indicating that moderate clipping supports efficient convergence.
-Evaluation time remained stable across all clip values (around 2.01s to 2.16s),
-showing that clipping primarily impacts training rather than inference performance. 
-Also Figure~\ref{fig:grad32} shows that accuracy was most stable across all clip values
-with the highest accuracy at clip=0.5, demonstrating its robustness to gradient clipping
-variations. Training time suggesting that larger clip values can speed up convergence
-without sacrificing stability.
-Evaluation time confirming that clipping had minimal effect on inference time.
+Figure~\ref{fig:grad16} shows accuracy peaked at 97.07\% with a clipping value
+of 0.5, while the lowest accuracy (96.55\%) occurred at clip=0.01, suggesting
+that very small clip values may overly restrict gradient updates and hurt
+learning. Training time ranged indicating that moderate clipping supports
+efficient convergence. Evaluation time remained stable across all clip values
+(around 2.01s to 2.16s), showing that clipping primarily impacts training
+rather than inference performance. Also Figure~\ref{fig:grad32} shows that
+accuracy was most stable across all clip values with the highest accuracy at
+clip=0.5, demonstrating its robustness to gradient clipping variations.
+Training time suggesting that larger clip values can speed up convergence
+without sacrificing stability. Evaluation time confirming that clipping had
+minimal effect on inference time.
 
 \subsection*{Effect of Decimal Rounding}
 
-A non training related issue is the storage of the NN parameters. Usually, the parameters
-are stored in the format that was chosen to train with. This is best for reproducibility
-as well as accuracy when doing inference with the trained model weights. The datatype  
-precision has a higher impact during training though, which begs the question if one could
-omit precision from the model weights. In this section, we explore a naive quantization
-method: Rounding to a fixed number of decimals. With significantly little decimals and a
-reasonable range for the integer part, one could store only the significant and provide
-base as well as exponent as metadata. When loading the model, the weights are converted
-back to floating point, with whatever precision is desired. Only the weights are quantized;
-the input data, as well are the values propagated through the network are at full
-precision.
+A non training related issue is the storage of the NN parameters. Usually, the
+parameters are stored in the format that was chosen to train with. This is best
+for reproducibility as well as accuracy when doing inference with the trained
+model weights. The datatype precision has a higher impact during training
+though, which begs the question if one could omit precision from the model
+weights. In this section, we explore a naive quantization method: Rounding to a
+fixed number of decimals. With significantly little decimals and a reasonable
+range for the integer part, one could store only the significant and provide
+base as well as exponent as metadata. When loading the model, the weights are
+converted back to floating point, with whatever precision is desired. Only the
+weights are quantized; the input data, as well are the values propagated
+through the network are at full precision.
 
-The first step is to examine the distribution of parameter values. By the standard
-deviation around modes one can make an educated guess as to how many decimals are needed.
-The range will decide how large the integer part may get. Reading from the 
-distribution is just a heuristic though, so we will also test the hypotheses.
-
+The first step is to examine the distribution of parameter values. By the
+standard deviation around modes one can make an educated guess as to how many
+decimals are needed. The range will decide how large the integer part may get.
+Reading from the distribution is just a heuristic though, so we will also test
+the hypotheses.
 
 \begin{figure}[H]
 	\centering
@@ -368,7 +372,7 @@ distribution is just a heuristic though, so we will also test the hypotheses.
 	\centering
 	\includegraphics[width=0.85\textwidth]{figures/118_dist2.png}
 	\caption{Distribution of model weights in each layer after rounding to two decimals.
-	This appears to be a good approximation already.}
+		This appears to be a good approximation already.}
 	\label{fig:118_2}
 \end{figure}
 
@@ -379,17 +383,17 @@ distribution is just a heuristic though, so we will also test the hypotheses.
 	\label{fig:118_acc}
 \end{figure}
 
-Figure~\ref{fig:118_acc} shows how rounding the decimal part affects the test accuracy.
-For just one decimal the model has a maximum of 19 different weights at its disposal,
-which makes the model have only 10\% accuracy, random guessing with a 10 class problem.
-Two decimals perform significantly better. At 70\% accuracy the model gets close to the
-full precision 88\% accuracy with 32 bit floating point. Making and educated guess on
-distribution such as Figure~\ref{fig:118_2} seems to be a good heuristic for this example.
-At just 3 decimals, the full 32 bit precision is reached. Thus we can conclude that with
-just 10 bit for representing 3 decimals, no bits for the integer part and one additional
-bit for the sign, only 11 bit must be stored to have the best performing model for
-inference.
-
+Figure~\ref{fig:118_acc} shows how rounding the decimal part affects the test
+accuracy. For just one decimal the model has a maximum of 19 different weights
+at its disposal, which makes the model have only 10\% accuracy, random guessing
+with a 10 class problem. Two decimals perform significantly better. At 70\%
+accuracy the model gets close to the full precision 88\% accuracy with 32 bit
+floating point. Making and educated guess on distribution such as
+Figure~\ref{fig:118_2} seems to be a good heuristic for this example. At just 3
+decimals, the full 32 bit precision is reached. Thus we can conclude that with
+just 10 bit for representing 3 decimals, no bits for the integer part and one
+additional bit for the sign, only 11 bit must be stored to have the best
+performing model for inference.
 
 \section{Summary}
 % \begin{itemize}
@@ -407,37 +411,37 @@ inference.
 % aggressive post-training quantization.This is particularly relevant for edge devices and
 % real-time applications where memory and compute constraints are more relevant.
 
-The experimental results presented in this paper demonstrate the robustness of neural
-networks to reduced parameter precision, particularly for simpler tasks like MNIST
-classification. Key findings include:
+The experimental results presented in this paper demonstrate the robustness of
+neural networks to reduced parameter precision, particularly for simpler tasks
+like MNIST classification. Key findings include:
 
 \begin{itemize}
 	\item \textbf{Precision Reduction During Training and Inference}: Training and evaluating
-	models with 16-bit floating-point (FP16) precision preserved accuracy comparable to
-	higher-precision formats (FP32 and FP64). This suggests that for tasks of similar
-	complexity, FP16 is sufficient, offering potential memory and computational savings
-	without sacrificing performance.
+	      models with 16-bit floating-point (FP16) precision preserved accuracy comparable to
+	      higher-precision formats (FP32 and FP64). This suggests that for tasks of similar
+	      complexity, FP16 is sufficient, offering potential memory and computational savings
+	      without sacrificing performance.
 
 	\item \textbf{Post-Training Quantization}: Reducing precision only during inference, after
-	training with high-precision (FP64), maintained baseline accuracy. This is
-	particularly valuable for deployment scenarios where training is done on powerful
-	hardware, but inference occurs on resource-constrained devices.
+	      training with high-precision (FP64), maintained baseline accuracy. This is
+	      particularly valuable for deployment scenarios where training is done on powerful
+	      hardware, but inference occurs on resource-constrained devices.
 
 	\item \textbf{Mixed-Precision:} Training and Gradient Clipping: TODO
 
 	\item \textbf{Weight Rounding:} Rounding trained weights to just three decimal digits
-	(approximately 11 bits) achieved full accuracy, highlighting the potential for
-	aggressive quantization in storage-efficient model deployment. This finding is
-	significant for edge applications where memory footprint is critical.
+	      (approximately 11 bits) achieved full accuracy, highlighting the potential for
+	      aggressive quantization in storage-efficient model deployment. This finding is
+	      significant for edge applications where memory footprint is critical.
 \end{itemize}
 
-However, the simplicity of the MNIST dataset and the small network architecture used in
-the experiments may limit the generalizability of these findings. More complex tasks
-(e.g., CIFAR-10, ImageNet) and deeper architectures (e.g., CNNs, Transformers) could
-exhibit greater sensitivity to precision reduction. Additionally, the impact of precision
-on training dynamics, such as gradient flow and convergence, was not deeply explored and
-could be a focus for future work.
-
+However, the simplicity of the MNIST dataset and the small network architecture
+used in the experiments may limit the generalizability of these findings. More
+complex tasks (e.g., CIFAR-10, ImageNet) and deeper architectures (e.g., CNNs,
+Transformers) could exhibit greater sensitivity to precision reduction.
+Additionally, the impact of precision on training dynamics, such as gradient
+flow and convergence, was not deeply explored and could be a focus for future
+work.
 
 \section{Conclusion}
 
@@ -447,33 +451,34 @@ could be a focus for future work.
 % complex datasets (e.g., CIFAR-10, ImageNet) and deeper architectures, and
 % explore advanced quantization-aware training techniques.
 
-This study demonstrates that neural networks can maintain strong performance even under
-significant reductions in parameter precision, particularly for simpler tasks like MNIST
-classification. Key findings confirm that FP16 training and inference, post-training
-quantization, and aggressive weight rounding (down to three decimal digits) preserve model
-accuracy while improving memory and computational efficiency. These results are promising
-for deploying models in resource-constrained environments, such as edge devices and
-real-time applications.
+This study demonstrates that neural networks can maintain strong performance
+even under significant reductions in parameter precision, particularly for
+simpler tasks like MNIST classification. Key findings confirm that FP16
+training and inference, post-training quantization, and aggressive weight
+rounding (down to three decimal digits) preserve model accuracy while improving
+memory and computational efficiency. These results are promising for deploying
+models in resource-constrained environments, such as edge devices and real-time
+applications.
 
-To build on these insights and expand their applicability, future work should focus on the
-following directions:
+To build on these insights and expand their applicability, future work should
+focus on the following directions:
 
 \begin{itemize}
-\item \textbf{Complex Architectures and Datasets:} Future research should validate these
-findings on more complex models (e.g., CNNs, Transformers) and datasets (e.g., CIFAR-10,
-ImageNet) to assess the scalability of low-precision techniques.
+	\item \textbf{Complex Architectures and Datasets:} Future research should validate these
+	      findings on more complex models (e.g., CNNs, Transformers) and datasets (e.g., CIFAR-10,
+	      ImageNet) to assess the scalability of low-precision techniques.
 
-\item \textbf{Quantization-Aware Training:} Investigating advanced methods like learned
-quantization, non-uniform bit allocation, and dynamic precision adjustment could further
-optimize the trade-off between efficiency and accuracy.
+	\item \textbf{Quantization-Aware Training:} Investigating advanced methods like learned
+	      quantization, non-uniform bit allocation, and dynamic precision adjustment could further
+	      optimize the trade-off between efficiency and accuracy.
 
-\item \textbf{Hardware-Specific Optimizations:} Exploring how reduced precision interacts
-with specialized hardware (e.g., TPUs, neuromorphic chips) could unlock new efficiency
-gains in real-world deployments.
+	\item \textbf{Hardware-Specific Optimizations:} Exploring how reduced precision interacts
+	      with specialized hardware (e.g., TPUs, neuromorphic chips) could unlock new efficiency
+	      gains in real-world deployments.
 
-\item \textbf{Theoretical Understanding:} A deeper analysis of how precision affects
-gradient dynamics, convergence, and generalization could provide foundational insights for
-designing robust low-precision training algorithms.
+	\item \textbf{Theoretical Understanding:} A deeper analysis of how precision affects
+	      gradient dynamics, convergence, and generalization could provide foundational insights for
+	      designing robust low-precision training algorithms.
 \end{itemize}
 
 \newpage
