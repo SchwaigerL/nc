@@ -48,7 +48,7 @@
 \maketitle
 
 \begin{abstract}
-	We study how the numerical precision of weights, activations, and gradients in neural networks can be reduced without sacrificing too much of the classification performance. Using MNIST as a dataset, we benchmark uniform 16–64-bit quantisation, mixed-precision formats, and post-training decimal rounding. The results reveal that (i) 16-bit end-to-end training preserves full accuracy for the MNIST dataset and the network used, (ii) three-decimal-place weight rounding while keeping 32-bit precision incurs minimal accuracy loss. These findings verify limits for memory- and energy-constrained usecases like inference in mobile devices.
+	We study how the numerical precision of weights, activations, and gradients in neural networks can be reduced without sacrificing too much of the classification performance. Using MNIST as a dataset, we benchmark uniform 64-16-bit quantisation, mixed-precision formats, and post-training decimal rounding. The results reveal that (i) 16-bit end-to-end training preserves full accuracy for the MNIST dataset and the network used, (ii) three-decimal-place weight rounding while keeping 32-bit precision incurs minimal accuracy loss. These findings verify limits for memory- and energy-constrained usecases like inference in mobile devices.
 \end{abstract}
 
 \section{Introduction}
@@ -286,10 +286,10 @@ Automatic Mixed Precision (AMP) accelerates deep learning training by using
 both float16 and float32 data types reducing memory usage and increasing
 computational speed. However, float16’s limited dynamic range can cause
 numerical instability, especially during backpropagation. To address this,
-Gradient Clipping is used to cap the magnitude of gradients—either globally or
-per element—preventing extreme updates that could hinder convergence. Together,
-AMP and gradient clipping enable efficient, stable training by balancing
-performance and numerical precision.
+Gradient Clipping is used to cap the magnitude of gradients (either globally or
+per element) preventing extreme updates that could hinder convergence.
+Together, AMP and gradient clipping enable efficient, stable training by
+balancing performance and numerical precision.
 
 First step is using global norm clipping, all gradients are collectively scaled
 to ensure their combined norm does not exceed a specified threshold, promoting
