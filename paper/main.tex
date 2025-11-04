@@ -23,7 +23,6 @@
 	backend=bibtex]{biblatex}
 \addbibresource{literature.bib}
 
-% Geometry settings
 \geometry{
 	a4paper,
 	total={6in, 9in},
@@ -31,11 +30,9 @@
 	top=1in,
 }
 
-% Title settings
 \titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{1em}{}
 \titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{1em}{}
 
-% Title
 \title{An Experimental Analysis of the Influence of the Precision of Parameters in an Artificial Neural Network}
 \author{Denise Katritschenko, Elias Reich, Sayed Abozar Sadat, Lukas Schwaiger\\
 	\small University of Salzburg\\
@@ -48,106 +45,108 @@
 \maketitle
 
 \begin{abstract}
-	We study how the numerical precision of weights, activations, and gradients in neural
-	networks can be reduced without sacrificing too much of the classification
-	performance. Using MNIST as a dataset, we benchmark uniform 64-16-bit quantisation,
-	mixed-precision formats, and post-training decimal rounding. The results reveal that
-	(i) 16-bit end-to-end training does not significantly decrease test accuracy for the
-	MNIST dataset and the network used, (ii) three-decimal-place weight rounding while
-	keeping 32-bit precision incurs minimal accuracy loss. These findings verify limits
-	for memory- and energy-constrained usecases like inference in mobile devices.
+	\noindent
+	We study how the numerical precision of weights, activations, and gradients in
+	neural networks can be reduced without sacrificing too much of the performance.
+	Using MNIST as a dataset, we benchmark uniform quantisation (mapping real
+	values to evenly spaced levels via a single step size), mixed-precision
+	formats, and post-training decimal rounding. We compare end-to-end
+	low-precision training, inference-only quantisation, and mixed-precision with
+	gradient clipping, and evaluate their impact on test accuracy and efficiency.
+	The results on the used test setup show that (i) 16-bit end-to-end training
+	does not significantly decrease test accuracy for the MNIST dataset, (ii)
+	three-decimal-place weight rounding while keeping 32-bit precision incurs
+	minimal accuracy loss. These findings verify limits for memory- and
+	energy-constrained usecases like inference in mobile devices.
 \end{abstract}
 
 \section{Introduction}
-Artificial Neural Networks (ANNs) are a key part of today’s machine learning
-systems. They’ve made huge progress in areas like image recognition, speech
+Artificial Neural Networks (ANNs) are a key part of today's machine learning
+systems. They have made huge progress in areas like image recognition, speech
 processing, and self-driving cars. However, one of the biggest challenges with
-ANNs is that they use a lot of memory and computing power. This becomes a
+large ANNs is that they use a lot of memory and computing power. This becomes a
 problem when you want to run them on devices with limited resources, such as
-smartphones, embedded systems, or edge devices. \\ \\ To solve this,
+smartphones, embedded systems, or edge devices. \\\\ In order to solve this,
 researchers have looked into ways to make neural networks more efficient. A
 common approach is to reduce the size of the network or shrink the input batch
-size. But doing this can harm the network’s ability to learn and generalize. A
-better strategy is to reduce the numerical precision of the network’s
-parameters such as things like weights, activations, and gradients. This
-method, called quantization, makes the model smaller and faster while using
-less energy, without necessarily hurting accuracy. \\ \\ One advanced version
-of this method is called mixed-precision quantization. Instead of using the
-same number of bits for every layer in the network, mixed-precision assigns
-different bitwidths depending on how important each part is. For example, the
-early layers that handle low-level features might use higher precision, while
-deeper layers could work fine with fewer bits. This flexible approach often
-leads to better results than using a single fixed precision for the whole
-model. Researchers have used a range of techniques, like gradient descent,
-heuristics, and even evolutionary algorithms, to find the best bitwidth
-settings for each layer. \\ \\ Another method that helps reduce resource usage
-is network pruning. This means cutting out parts of the network that don’t
-contribute much to its performance. One interesting way to do this is with
-simulated annealing, a search algorithm that mimics the process of cooling
-metal to find a stable structure. It doesn’t need gradient information and can
-still find good network shapes by exploring many possibilities. This makes it
-useful when you want to shrink a network without going through heavy
-retraining. \\ \\ Previous studies have shown that reducing the precision of
-neural network parameters can lead to significant improvements in memory usage
-and processing speed. Even when precision is reduced to very low levels, models
-can still perform competitively on complex tasks. However, while these early
-results are promising, the overall effects of lowering precision, especially
-how it influences model accuracy, training behavior, and storage efficiency,
-are still not fully understood and deserve more detailed investigation. \\ \\
-This is where our experimental work begins. In this paper, we take a closer
-look at how different levels of parameter precision affect the behavior and
-performance of neural networks. Our goal is to understand what happens when we
-reduce precision in various ways, and how much we can lower it before
-performance starts to drop. \\ \\ We start by testing how reducing precision
-during both training and inference affects model accuracy and runtime. Next, we
-look at what happens when we train the network using full precision, but lower
-the precision only during inference. This setup is common in real-world
-applications, where a powerful machine handles training, but the final model is
-deployed on a lightweight device. Then, we run a series of tests where we round
-the trained weights to a limited number of decimal places. This helps us see
-how much we can simplify the stored weight values without hurting accuracy too
-much. This is especially useful for devices with very limited storage. We also
-try out mixed-precision training, using a mix of FP16 and FP32 formats. On top
-of that, we experiment with different types of gradient clipping, like global
-norm clipping and value clipping, to see how they affect training stability and
-final accuracy. Even though we use relatively simple network architectures and
-datasets, our results show that neural networks are quite robust to
-low-precision settings. In some cases, we were able to round weights to just
-three decimal digits and still get nearly the same accuracy as the
-full-precision version. These findings show that it’s possible to significantly
-reduce the memory and compute needs of neural networks without losing much
-performance. This makes them more practical for use in low-resource settings.
-It also opens the door for more advanced techniques that combine quantization,
-pruning, and precision-aware training to build highly efficient models for
-real-world applications.
+size. But doing this can harm the network's ability to learn and generalize. A
+better strategy is to reduce the numerical precision of the network's
+parameters such as weights, activations, and gradients. This method, called
+quantization, makes the model smaller and faster while using less energy,
+without necessarily hurting accuracy. \\\\ An advanced version of this method
+is called mixed-precision quantization. Instead of using the same number of
+bits for every layer in the network, mixed-precision assigns different
+bitwidths depending on how important each part is. For example, the early
+layers that handle low-level features might use higher precision, while deeper
+layers could work fine with fewer bits. This flexible approach often leads to
+better results than using a single fixed precision for the whole model.
+Researchers have used a range of techniques, like gradient descent, heuristics,
+and even evolutionary algorithms, to find the best bitwidth settings for each
+layer. \\\\ Another method that helps reduce resource usage is network pruning.
+This means cutting out parts of the network that do not contribute much to its
+performance. A way to do this is simulated annealing, a search algorithm that
+mimics the process of cooling metal to find a stable structure. It does not
+need gradient information and can still find good network shapes by exploring
+many possibilities. This makes it useful when you want to shrink a network
+without going through heavy retraining. \\\\ Previous studies have shown that
+reducing the precision of neural network parameters can lead to significant
+improvements in memory usage and processing speed. Even when precision is
+reduced to very low levels, models can still perform competitively on complex
+tasks. However, while these early results are promising, the overall effects of
+lowering precision, especially how it influences model accuracy, training
+behavior, and storage efficiency, are still not fully understood and deserve
+more detailed investigation. \\\\ This is where our experimental work begins.
+In this paper, we take a closer look at how different levels of parameter
+precision affect the behavior and performance of neural networks. Our goal is
+to understand what happens when we reduce precision in various ways, and how
+much we can lower it before performance starts to drop. \\\\ We start by
+testing how reducing precision during both training and inference affects model
+accuracy and runtime. Next, we look at what happens when we train the network
+using full precision, but lower the precision only during inference. This setup
+is common in real-world applications, where a powerful machine handles
+training, but the final model is deployed on a lightweight device. Then, we run
+a series of tests where we round the trained weights to a limited number of
+decimal places. This helps to see how much we can simplify the stored weight
+values without hurting accuracy too much. This is especially useful for devices
+with very limited storage. We also try out mixed-precision training, using a
+mix of Half-Precision Floating Point (FP16) and Single-Precision Floating Point
+(FP32) formats. On top of that, we experiment with different types of gradient
+clipping, like global norm clipping and value clipping, to see how they affect
+training stability and final accuracy. \\\\ Even though we use relatively
+simple network architectures and datasets, our results show that neural
+networks are quite robust to low-precision settings. In some cases, we were
+able to round weights to just three decimal digits and still get nearly the
+same accuracy as the full-precision version. These findings show that it is
+possible to significantly reduce the memory and compute needs of neural
+networks without losing much performance. This makes them more practical for
+use in low-resource settings. It also opens the door for more advanced
+techniques that combine quantization, pruning, and precision-aware training to
+build highly efficient models for real-world applications.
 
-\section{Background}
+\section{Artificial Neural Networks}
 
 A typical neuron in a neural network performs a weighted sum of its inputs,
-followed by an activation function:
-\[
+followed by an activation function (depicted in~\eqref{eq:activation}):
+
+\begin{equation}\label{eq:activation}
 	a = \omega^\top x + b,\quad \hat{y} = \sigma(a),
-\]
-where \( \omega \in \mathbb{R}^n \) is the weight vector, \( b \in \mathbb{R}
-\) is the bias, \( x \in \mathbb{R}^n \) is the input, and \( \sigma \) is a
-nonlinear activation function (e.g., sigmoid or ReLU).
+\end{equation}
 
-Training is conducted via backpropagation, where gradients of a loss function
-\( L(\hat{y}, y) \) with respect to the model parameters are computed. For
-example, using the mean squared error:
-% \[
-% L(\hat{y}, y) = (\hat{y} - y)^2, \qquad \pdv{L}{\omega_i} = 2(\hat{y} - y) \cdot \odv{\sigma}{a} \cdot x_i.
-% \]
+where $\omega \in \mathbb{R}^n$ is the weight vector, $b \in \mathbb{R}$ is the
+bias, $x \in \mathbb{R}^n$ is the input, and $\sigma$ is a nonlinear activation
+function (e.g., sigmoid or ReLU). Training is conducted via backpropagation,
+where gradients of a loss function $L(\hat{y}, y)$ with respect to the model
+parameters are computed. For example, using the mean squared error:
 
-\begin{align*}
-	L(f(x_1, x_2)) & = {(\sigma(\omega^T x + b) - y)}^2 \\
-	               & = {(\sigma(a) - y)}^2              \\
+\begin{align}\label{eq:mse}
+	L(f(x_1, x_2)) & = {(\sigma(\omega^\top x + b) - y)}^2 \nonumber \\
+	               & = {(\sigma(a) - y)}^2 \nonumber                 \\
 	               & = {(\hat y - y)}^2
-\end{align*}
-\begin{alignat*}{3}
-	\pdv{L}{\omega_1} & = \pdv{L}{\sigma} &  & \pdv{\sigma}{a}      &  & \pdv{a}{\omega_1} \\
-	                  & = 2(\hat y - y)~~ &  & \odv{}{a}\sigma(a)~~ &  & x_1
-\end{alignat*}
+\end{align}
+\begin{alignat}{3}\label{eq:grad-w1}
+	\pdv{L}{\omega_1} & = \pdv{L}{\sigma} &  & \pdv{\sigma}{a}      &  & \pdv{a}{\omega_1} \nonumber \\
+	                  & = 2(\hat y - y)~~ &  & \odv{\sigma(a)}{a}~~ &  & x_1
+\end{alignat}
 
 Memory and computational requirements during training are substantial, as
 gradients, activations, and parameters must be stored and updated iteratively.
@@ -262,11 +261,11 @@ assume that the model accuracy has neither decreased, nor increased.
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.85\textwidth]{figures/trainingAndInference.png}
-	\caption{Model accuracy evaluated after training with the different precisions.}\label{fig:modelAccTrainAndInf}
+	\caption{Model accuracy evaluated after training with different precisions.}\label{fig:modelAccTrainAndInf}
 \end{figure}
 
 \subsection*{Training and Inference Time}
-Also analyzed were the times needed for both the training and inference.
+We also analyzed the times needed for both, training and inference.
 Figure~\ref{fig:modelEvalTrainTimes} depicts the times measured in the training
 loop and later on at the inference stage. Again, the times are almost identical
 in both regards, and neither a real speed-up nor a slow-down has been measured.
@@ -293,7 +292,7 @@ all because for the lower precisions, there was no new model trained.
 \subsection*{Automatic Mixed Precision and Gradient Clipping}
 Automatic Mixed Precision (AMP) accelerates deep learning training by using
 both FP16 and FP32 data types reducing memory usage and increasing
-computational speed. However, FP16’s limited dynamic range can cause numerical
+computational speed. However, FP16's limited dynamic range can cause numerical
 instability, especially during backpropagation. To address this, Gradient
 Clipping is used to cap the magnitude of gradients (either globally or per
 element) preventing extreme updates that could hinder convergence. Together,
