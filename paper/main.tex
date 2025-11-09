@@ -159,16 +159,14 @@ To reduce memory usage and computational load, precision-aware techniques such
 as quantization and mixed-precision training are increasingly employed. Instead
 of using 32-bit or 64-bit floating-point formats, parameters can be stored in
 16-bit or even 8-bit fixed-point representations.
-Figure~\ref{fig:floatingPointFormat} depicts the general floating point format
+Equation~\ref{eq:floatingPointFormat} depicts the general floating point format
 and terminology of significand, base, and exponent.
 Tables~\ref{tab:binary-bits} and~\ref{tab:binary-precision} provide an overview
 of the different floating point types and their respective characteristics.
 
-\begin{figure}[H]
-	\centering
-	\includegraphics[width=0.8\textwidth]{figures/float.png}
-	\caption{Illustration of standard floating-point format.}\label{fig:floatingPointFormat}
-\end{figure}
+\begin{align}\label{eq:floatingPointFormat}
+	\frac{2469}{200}=12.345=\underbrace{12345}_{\text{significand}}\times\underbrace{10^{\overbrace{-3}^{\text{exponent}}}}_{\text{base}}
+\end{align}
 
 \begin{table}[H]
 	\centering
