@@ -48,10 +48,14 @@
 	\noindent
 	We study how the numerical precision of weights, activations, and gradients in
 	neural networks can be reduced without sacrificing too much of the performance.
-	Using MNIST as a dataset, we benchmark uniform quantisation (mapping real
+	Using MNIST as a dataset, we benchmark uniform quantization (mapping real
 	values to evenly spaced levels via a single step size), mixed-precision
-	formats, and post-training decimal rounding. We compare end-to-end
-	low-precision training, inference-only quantisation, and mixed-precision with
+	formats, and post-training decimal rounding. We evaluate precision settings
+	(FP64/FP32/FP16) across all tensors during training, experiment with an
+	inference-only quantization path on FP64-trained models, and test automatic
+	mixed precision with gradient clipping. Metrics include test accuracy,
+	training/inference time, and parameter storage. We compare end-to-end
+	low-precision training, inference-only quantization, and mixed-precision with
 	gradient clipping, and evaluate their impact on test accuracy and efficiency.
 	The results on the used test setup show that (i) 16-bit end-to-end training
 	does not significantly decrease test accuracy for the MNIST dataset, (ii)
@@ -123,6 +127,28 @@ use in low-resource settings. It also opens the door for more advanced
 techniques that combine quantization, pruning, and precision-aware training to
 build highly efficient models for real-world applications.
 
+\subsection{Related Work}
+
+Prior research in this domain can be broadly classified into two categories:
+
+\subsubsection*{Quantization During Training}
+Several studies have explored training neural networks with reduced precision
+directly. Notable contributions include:
+\begin{itemize}
+	\item \textbf{Mixed Precision Training}, which leverages FP16 arithmetic for speed while maintaining FP32 master weights~\cite{micikevicius2017mixed}.
+	\item \textbf{DoReFa-Net}, which quantizes weights, activations, and gradients to arbitrary bitwidths~\cite{zhou2018dorefa}.
+	\item \textbf{Q-BERT}, a quantized BERT model that maintains accuracy using only 4-bit weights~\cite{shen2020qbert}.
+\end{itemize}
+
+\subsubsection*{Post-Training Quantization}
+Other approaches focus on converting pretrained models into lower-precision
+equivalents:
+\begin{itemize}
+	\item \textbf{Integer-Only Quantization} using symmetric quantization scales~\cite{jacob2018quantization}.
+	\item \textbf{GPTQ}, a method for quantizing large transformer models without retraining~\cite{frantar2022gptq}.
+	\item \textbf{SmoothQuant}, which scales activations to better match weight ranges during quantization~\cite{xiao2024smoothquant}.
+\end{itemize}
+
 \section{Artificial Neural Networks}
 
 A typical neuron in a neural network performs a weighted sum of its inputs,
@@ -188,37 +214,13 @@ of the different floating point types and their respective characteristics.
 		\toprule
 		\textbf{Type} & Exponent bias & Precision (bits) & Decimal digits \\
 		\midrule
-		Half  (FP16)  & 15            & 11               & $\sim$3.3      \\
+		Half (FP16)   & 15            & 11               & $\sim$3.3      \\
 		Single (FP32) & 127           & 24               & $\sim$7.2      \\
 		Double (FP64) & 1023          & 53               & $\sim$15.9     \\
 		\bottomrule
 	\end{tabular}
 	\caption{Range and precision characteristics of the same formats (adapted from~\cite{fparithmetic}).}\label{tab:binary-precision}
 \end{table}
-
-\section{Related Work}
-
-Prior research in this domain can be broadly classified into two categories:
-
-\subsection*{Quantization During Training}
-Several studies have explored training neural networks with reduced precision
-directly. Notable contributions include:
-\begin{itemize}
-	\item \textbf{Mixed Precision Training}, which leverages FP16 arithmetic for speed while maintaining FP32 master weights~\cite{micikevicius2017mixed}.
-	\item \textbf{DoReFa-Net}, which quantizes weights, activations, and gradients to arbitrary bitwidths~\cite{zhou2018dorefa}.
-	\item \textbf{Q-BERT}, a quantized BERT model that maintains accuracy using only 4-bit weights~\cite{shen2020qbert}.
-\end{itemize}
-
-\subsection*{Post-Training Quantization}
-Other approaches focus on converting pretrained models into lower-precision
-equivalents:
-\begin{itemize}
-	\item \textbf{Integer-Only Quantization} using symmetric quantization scales~\cite{jacob2018quantization}.
-	\item \textbf{GPTQ}, a method for quantizing large transformer models without retraining~\cite{frantar2022gptq}.
-	\item \textbf{SmoothQuant}, which scales activations to better match weight ranges during quantization~\cite{xiao2024smoothquant}.
-\end{itemize}
-
-\newpage
 
 \section{Experimental Design}
 
