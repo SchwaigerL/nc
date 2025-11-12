@@ -48,20 +48,20 @@
 	\noindent
 	We study how the numerical precision of weights, activations, and gradients in
 	neural networks can be reduced without sacrificing too much of the performance.
-	Using MNIST as a dataset, we benchmark uniform quantization (mapping real
-	values to evenly spaced levels via a single step size), mixed-precision
-	formats, and post-training decimal rounding. We evaluate precision settings
-	(FP64/FP32/FP16) across all tensors during training, experiment with an
-	inference-only quantization path on FP64-trained models, and test automatic
-	mixed precision with gradient clipping. Metrics include test accuracy,
-	training/inference time, and parameter storage. We compare end-to-end
-	low-precision training, inference-only quantization, and mixed-precision with
-	gradient clipping, and evaluate their impact on test accuracy and efficiency.
-	The results on the used test setup show that (i) 16-bit end-to-end training
-	does not significantly decrease test accuracy for the MNIST dataset, (ii)
-	three-decimal-place weight rounding while keeping 32-bit precision incurs
-	minimal accuracy loss. These findings verify limits for memory- and
-	energy-constrained usecases like inference in mobile devices.
+	Using MNIST as a general dataset (and FashionMNIST for the decimal rounding),
+	we benchmark uniform quantization (mapping real values to evenly spaced levels
+	via a single step size), mixed-precision formats, and post-training decimal
+	rounding. We evaluate precision settings (FP64/FP32/FP16) across all tensors
+	during training, experiment with an inference-only quantization path on
+	FP64-trained models, and test automatic mixed precision with gradient clipping.
+	Metrics include test accuracy, training/inference time, and parameter storage.
+	We compare end-to-end low-precision training, inference-only quantization, and
+	mixed-precision with gradient clipping, and evaluate their impact on test
+	accuracy and efficiency. The results on the used test setup show that (i)
+	16-bit end-to-end training does not significantly decrease test accuracy for
+	the MNIST dataset, (ii) three-decimal-place weight rounding while keeping
+	32-bit precision incurs minimal accuracy loss. These findings verify limits for
+	memory- and energy-constrained usecases like inference in mobile devices.
 \end{abstract}
 
 \section{Introduction}
