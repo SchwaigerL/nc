@@ -224,7 +224,6 @@ of the different floating point types and their respective characteristics.
 \end{table}
 
 \section{Experimental Design}
-
 The effect of numerical precision on training and inference is evaluated
 through five experiment groups run on standard image classification tasks. The
 main dataset MNIST\footnote{LeCun, Cortes, and Burges:
@@ -255,6 +254,29 @@ std $0.3081$. Unless stated otherwise, we train with cross-entropy loss and SGD
 	\caption{Network structure used in the experiments.}\label{fig:mlpStructure}
 \end{figure}
 
+For the MNIST experiments (i) end-to-end precision, (ii) timing, (iii)
+inference-only precision reduction, and (iv) automatic mixed precision (AMP)
+with gradient clipping, we use 5-fold cross-validation on the training set with
+random equal splits. Unless noted otherwise, figures report fold means, and no
+test set tuning is performed. In the end-to-end runs, every floating point
+tensor appearing inside the training loop (parameters, activations, gradients,
+and optimizer state) is kept at the target precision during training and
+evaluation. The timing experiment reuses these runs to measure mean per-epoch
+training time and mean evaluation time. For inference-only reduction, we first
+train a baseline model in FP64 and then do inference on copies cast to FP32 and
+FP16 without any further optimization (so no \textit{retraining} on the lower
+precision).\\
+
+The AMP experiment is run on MNIST with gradient clipping, comparing an AMP
+setup (FP16 computations with FP32 master weights) against a pure FP32
+baseline. We try different global-norm and per-element value-clipping
+thresholds to check stability and report test accuracy and training/inference
+times. We also run a one-off rounding experiment on FashionMNIST (batch size
+$256$, FP32 training): after training, only the stored weights are rounded to
+$k$ decimal places ($k{=}1\ldots14$) and inference remains FP32. Inputs and
+intermediate computations stay at full precision. We report test accuracy as a
+function of $k$ and note the impact on storage.
+
 \newpage
 \section{Results}
 In the first experiment, every floating-point tensor that is used inside the
@@ -266,7 +288,7 @@ The types tried were FP64, FP32, and FP16.
 Figure~\ref{fig:modelAccTrainAndInf} shows how the accuracy changed after the
 models were trained on the different precision settings. Keep in mind that the
 y-axis is not starting from zero, so the absolute height differences are
-amplified visually, though the delta is only around $.1\%$. Re-training the
+amplified visually, though the delta is only around $.1\%$. Retraining the
 models and re-evaluating them has also lead to the accuracies being
 ``reversed'', meaning the FP64 model had the least accuracy. It is safe to
 assume that the model accuracy has neither decreased, nor increased.
@@ -302,14 +324,14 @@ all because for the lower precisions, there was no new model trained.
 \end{figure}
 
 \subsection*{Automatic Mixed Precision and Gradient Clipping}
-Automatic Mixed Precision (AMP) accelerates deep learning training by using
-both FP16 and FP32 data types reducing memory usage and increasing
-computational speed. However, FP16's limited dynamic range can cause numerical
-instability, especially during backpropagation. To address this, Gradient
-Clipping is used to cap the magnitude of gradients (either globally or per
-element) preventing extreme updates that could hinder convergence. Together,
-AMP and gradient clipping enable efficient, stable training by balancing
-performance and numerical precision.
+Automatic Mixed Precision (AMP) improves deep learning training by using both
+FP16 and FP32 data types reducing memory usage and increasing computational
+speed. However, FP16's limited dynamic range can cause numerical instability,
+especially during backpropagation. To address this, Gradient Clipping is used
+to cap the magnitude of gradients (either globally or per element) preventing
+extreme updates that could hinder convergence. Together, AMP and gradient
+clipping enable efficient, stable training by balancing performance and
+numerical precision.
 
 First step is using global norm clipping, all gradients are collectively scaled
 to ensure their combined norm does not exceed a specified threshold, promoting
@@ -394,7 +416,7 @@ the hypotheses.
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.85\textwidth]{figures/118_accuracy.png}
-	\caption{Test Accuracy vs.\ number of decimal digits retained in weights.}\label{fig:118_acc}
+	\caption{Test accuracy vs.\ number of decimal digits retained in weights.}\label{fig:118_acc}
 \end{figure}
 
 Figure~\ref{fig:118_acc} shows how rounding the decimal part affects the test
@@ -402,7 +424,7 @@ accuracy. For just one decimal the model has a maximum of 19 different weights
 at its disposal, which makes the model have only 10\% accuracy, random guessing
 with a 10 class problem. Two decimals perform significantly better. At 70\%
 accuracy the model gets close to the full precision 88\% accuracy with 32 bit
-floating point. Making and educated guess on distribution such as
+floating point. Making an educated guess on distribution such as
 Figure~\ref{fig:118_2} seems to be a good heuristic for this example. At just 3
 decimals, the full 32 bit precision is reached. Thus we can conclude that with
 just 10 bit for representing 3 decimals, no bits for the integer part and one
@@ -462,12 +484,6 @@ flow and convergence, was not deeply explored and could be a focus for future
 work.
 
 \section{Conclusion}
-
-% This work confirms that for relatively simple tasks like MNIST classification,
-% significant reductions in parameter precision can be achieved without
-% compromising performance. Our future efforts will extend this analysis to more
-% complex datasets (e.g., CIFAR-10, ImageNet) and deeper architectures, and
-% explore advanced quantization-aware training techniques.
 
 This study demonstrates that neural networks can maintain strong performance
 even under significant reductions in parameter precision, particularly for
