@@ -14,6 +14,7 @@
 \usepackage{float}
 \usepackage{derivative}
 \usepackage{subcaption}
+\usepackage{bbm}
 
 \usepackage[
 	style=nejm,
@@ -113,20 +114,20 @@ deployed on a lightweight device. Then, we run a series of tests where we round
 the trained weights to a limited number of decimal places. This helps to see
 how much we can simplify the stored weight values without hurting accuracy too
 much. This is especially useful for devices with very limited storage. We also
-try out mixed-precision training, using a mix of Half-Precision Floating Point
-(FP16) and Single-Precision Floating Point (FP32) formats. On top of that, we
-experiment with different types of gradient clipping, like global norm clipping
-and value clipping, to see how they affect training stability and final
-accuracy. \\\\ Even though we use relatively simple network architectures and
-datasets, our results show that neural networks are quite robust to
-low-precision settings. In some cases, we were able to round weights to just
-three decimal digits and still get nearly the same accuracy as the
-full-precision version. These findings show that it is possible to
-significantly reduce the memory and compute needs of neural networks without
-losing much performance. This makes them more practical for use in low-resource
-settings. It also opens the door for more advanced techniques that combine
-quantization, pruning, and precision-aware training to build highly efficient
-models for real-world applications.
+try out mixed-precision training, using a mix of Double-Precision Floating
+Point (FP64), Half-Precision Floating Point (FP16) and Single-Precision
+Floating Point (FP32) formats. On top of that, we experiment with different
+types of gradient clipping, like global norm clipping and value clipping, to
+see how they affect training stability and final accuracy. \\\\ Even though we
+use relatively simple network architectures and datasets, our results show that
+neural networks are quite robust to low-precision settings. In some cases, we
+were able to round weights to just three decimal digits and still get nearly
+the same accuracy as the full-precision version. These findings show that it is
+possible to significantly reduce the memory and compute needs of neural
+networks without losing much performance. This makes them more practical for
+use in low-resource settings. It also opens the door for more advanced
+techniques that combine quantization, pruning, and precision-aware training to
+build highly efficient models for real-world applications.
 
 \subsection{Related Work}
 
@@ -156,7 +157,7 @@ A typical neuron in a neural network performs a weighted sum of its inputs,
 followed by an activation function (depicted in~\eqref{eq:activation}):
 
 \begin{equation}\label{eq:activation}
-	a = \omega^\top x + b,\quad \hat{y} = \sigma(a),
+	a=\omega^\top x+b,\quad\hat{y}=\sigma(a)
 \end{equation}
 
 where $\omega \in \mathbb{R}^n$ is the weight vector, $b \in \mathbb{R}$ is the
@@ -277,7 +278,6 @@ $k$ decimal places ($k{=}1\ldots14$) and inference remains FP32. Inputs and
 intermediate computations stay at full precision. We report test accuracy as a
 function of $k$ and note the impact on storage.
 
-\newpage
 \section{Results}
 In the first experiment, every floating-point tensor that is used inside the
 training loop was converted to a lower precision data type. This therefore
