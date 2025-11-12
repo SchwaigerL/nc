@@ -28,10 +28,10 @@ digraph MLP {
     }
     subgraph clusterOutput {
         label="Output Layer (10 logits)";
-        y1 [label="y1"];
-        y2 [label="y2"];
-        yDots [label="..."];
-        y10 [label="y10"];
+        z1 [label="z1"];
+        z2 [label="z2"];
+        zDots [label="..."];
+        z10 [label="z10"];
     }
 
     //Input Layer -> Hidden Layer 1
@@ -71,20 +71,20 @@ digraph MLP {
     h1_128 -> h2_64;
 
     //Hidden Layer 2 -> Output
-    h2_1 -> y1;
-    h2_1 -> y2;
-    h2_1 -> yDots;
-    h2_1 -> y10;
-    h2_2 -> y1;
-    h2_2 -> y2;
-    h2_2 -> yDots;
-    h2_2 -> y10;
-    h2Dots -> y1;
-    h2Dots -> y2;
-    h2Dots -> yDots;
-    h2Dots -> y10;
-    h2_64 -> y1;
-    h2_64 -> y2;
-    h2_64 -> yDots;
-    h2_64 -> y10;
+    h2_1 -> z1;
+    h2_1 -> z2;
+    h2_1 -> zDots;
+    h2_1 -> z10;
+    h2_2 -> z1;
+    h2_2 -> z2;
+    h2_2 -> zDots;
+    h2_2 -> z10;
+    h2Dots -> z1;
+    h2Dots -> z2;
+    h2Dots -> zDots;
+    h2Dots -> z10;
+    h2_64 -> z1;
+    h2_64 -> z2;
+    h2_64 -> zDots;
+    h2_64 -> z10;
 }
