@@ -1,0 +1,19 @@
+The basic organization of the paper is good and the linguistic quality is excellent (sometimes a bit casual). The experiments are interesting and done nicely.
+There are some issues, but these can be fixed rather quickly (more in the notes in the paper).
+
+- improve organization of sections, e.g., algorithmic details like gradient clipping should not be explained in the experiment section, as there we should focus on the experiments, also many things are missing in the setup/design section
+
+- the summary should be a real summary
+
+- captions should be precise, but also short, so discussions on the graph should be in the text
+
+- discuss the main findings right after each graph (briefly, but not just the obvious that A is better than B)
+
+- most of the current text can be used for the above, but it should be restructured, if necessary
+
+- references should be referenced in the text, not 15 times, but at least once
+
+
+
+
+

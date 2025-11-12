@@ -84,48 +84,49 @@ bitwidths depending on how important each part is. For example, the early
 layers that handle low-level features might use higher precision, while deeper
 layers could work fine with fewer bits. This flexible approach often leads to
 better results than using a single fixed precision for the whole model.
-Researchers have used a range of techniques, like gradient descent, heuristics,
-and even evolutionary algorithms, to find the best bitwidth settings for each
-layer. \\\\ Another method that helps reduce resource usage is network pruning.
-This means cutting out parts of the network that do not contribute much to its
-performance. A way to do this is simulated annealing, a search algorithm that
-mimics the process of cooling metal to find a stable structure. It does not
-need gradient information and can still find good network shapes by exploring
-many possibilities. This makes it useful when you want to shrink a network
-without going through heavy retraining. \\\\ Previous studies have shown that
-reducing the precision of neural network parameters can lead to significant
-improvements in memory usage and processing speed. Even when precision is
-reduced to very low levels, models can still perform competitively on complex
-tasks. However, while these early results are promising, the overall effects of
-lowering precision, especially how it influences model accuracy, training
-behavior, and storage efficiency, are still not fully understood and deserve
-more detailed investigation. \\\\ This is where our experimental work begins.
-In this paper, we take a closer look at how different levels of parameter
-precision affect the behavior and performance of neural networks. Our goal is
-to understand what happens when we reduce precision in various ways, and how
-much we can lower it before performance starts to drop. \\\\ We start by
-testing how reducing precision during both training and inference affects model
-accuracy and runtime. Next, we look at what happens when we train the network
-using full precision, but lower the precision only during inference. This setup
-is common in real-world applications, where a powerful machine handles
-training, but the final model is deployed on a lightweight device. Then, we run
-a series of tests where we round the trained weights to a limited number of
-decimal places. This helps to see how much we can simplify the stored weight
-values without hurting accuracy too much. This is especially useful for devices
-with very limited storage. We also try out mixed-precision training, using a
-mix of Half-Precision Floating Point (FP16) and Single-Precision Floating Point
-(FP32) formats. On top of that, we experiment with different types of gradient
-clipping, like global norm clipping and value clipping, to see how they affect
-training stability and final accuracy. \\\\ Even though we use relatively
-simple network architectures and datasets, our results show that neural
-networks are quite robust to low-precision settings. In some cases, we were
-able to round weights to just three decimal digits and still get nearly the
-same accuracy as the full-precision version. These findings show that it is
-possible to significantly reduce the memory and compute needs of neural
-networks without losing much performance. This makes them more practical for
-use in low-resource settings. It also opens the door for more advanced
-techniques that combine quantization, pruning, and precision-aware training to
-build highly efficient models for real-world applications.
+Researchers have used a range of techniques, like stochastic gradient descent
+(SGD), heuristics, and even evolutionary algorithms, to find the best bitwidth
+settings for each layer. \\\\ Another method that helps reduce resource usage
+is network pruning. This means cutting out parts of the network that do not
+contribute much to its performance. A way to do this is simulated annealing, a
+search algorithm that mimics the process of cooling metal to find a stable
+structure. It does not need gradient information and can still find good
+network shapes by exploring many possibilities. This makes it useful when you
+want to shrink a network without going through heavy retraining. \\\\ Previous
+studies have shown that reducing the precision of neural network parameters can
+lead to significant improvements in memory usage and processing speed. Even
+when precision is reduced to very low levels, models can still perform
+competitively on complex tasks. However, while these early results are
+promising, the overall effects of lowering precision, especially how it
+influences model accuracy, training behavior, and storage efficiency, are still
+not fully understood and deserve more detailed investigation. \\\\ This is
+where our experimental work begins. In this paper, we take a closer look at how
+different levels of parameter precision affect the behavior and performance of
+neural networks. Our goal is to understand what happens when we reduce
+precision in various ways, and how much we can lower it before performance
+starts to drop. \\\\ We start by testing how reducing precision during both
+training and inference affects model accuracy and runtime. Next, we look at
+what happens when we train the network using full precision, but lower the
+precision only during inference. This setup is common in real-world
+applications, where a powerful machine handles training, but the final model is
+deployed on a lightweight device. Then, we run a series of tests where we round
+the trained weights to a limited number of decimal places. This helps to see
+how much we can simplify the stored weight values without hurting accuracy too
+much. This is especially useful for devices with very limited storage. We also
+try out mixed-precision training, using a mix of Half-Precision Floating Point
+(FP16) and Single-Precision Floating Point (FP32) formats. On top of that, we
+experiment with different types of gradient clipping, like global norm clipping
+and value clipping, to see how they affect training stability and final
+accuracy. \\\\ Even though we use relatively simple network architectures and
+datasets, our results show that neural networks are quite robust to
+low-precision settings. In some cases, we were able to round weights to just
+three decimal digits and still get nearly the same accuracy as the
+full-precision version. These findings show that it is possible to
+significantly reduce the memory and compute needs of neural networks without
+losing much performance. This makes them more practical for use in low-resource
+settings. It also opens the door for more advanced techniques that combine
+quantization, pruning, and precision-aware training to build highly efficient
+models for real-world applications.
 
 \subsection{Related Work}
 
@@ -224,12 +225,17 @@ of the different floating point types and their respective characteristics.
 
 \section{Experimental Design}
 
-We trained a simple fully connected neural network on the MNIST dataset,
-consisting of 60,000 training and 10,000 test grayscale images of handwritten
-digits (28×28 pixels, see figure~\ref{fig:mnistSample}). Model training was
-performed under varying parameter bitwidths, and 5-fold cross-validation to
-evaluate the model performance. The structure of the MLP is depicted in
-figure~\ref{fig:mlpStructure}.
+The effect of numerical precision on training and inference is evaluated
+through five experiment groups run on standard image classification tasks. The
+main dataset MNIST\footnote{LeCun, Cortes, and Burges:
+	\url{http://yann.lecun.com/exdb/mnist/}.} ($28\times 28$ grayscale images of
+handwritten digits, train/test split $60.000$/$10.000$, 10 classes, examples
+shown in Figure~\ref{fig:mnistSample}) is used to determine precision effects
+on accuracy and runtime under a simple workload, while an after-training
+rounding experiment is performed on FashionMNIST\footnote{Xiao, Rasul, and
+	Vollgraf: \url{https://github.com/zalandoresearch/fashion-mnist}.} ($28\times
+28$ grayscale images of clothing items, train/test split $60.000$/$10.000$, 10
+classes) so the impact of using coarse value sets is better observable.\\
 
 \begin{figure}[H]
 	\centering
@@ -237,10 +243,16 @@ figure~\ref{fig:mlpStructure}.
 	\caption{Sample images from the MNIST dataset.}\label{fig:mnistSample}
 \end{figure}
 
+The classifier used is a fully connected network
+$784\rightarrow128\rightarrow64\rightarrow10$ with ReLU between linear layers
+(Figure~\ref{fig:mlpStructure}). Inputs are normalized with mean $0.1307$ and
+std $0.3081$. Unless stated otherwise, we train with cross-entropy loss and SGD
+(learning rate $0.01$, momentum $0.9$), batch size $64$, and on CUDA.\\
+
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.85\textwidth]{figures/mlpStruc.png}
-	\caption{MLP structure used in the experiments.}\label{fig:mlpStructure}
+	\caption{Network structure used in the experiments.}\label{fig:mlpStructure}
 \end{figure}
 
 \newpage
