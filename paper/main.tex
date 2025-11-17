@@ -152,7 +152,6 @@ equivalents:
 \end{itemize}
 
 \section{Artificial Neural Networks}
-
 A typical neuron in a neural network performs a weighted sum of its inputs,
 followed by an activation function which results in the neuron output $h$
 depicted in~\eqref{eq:activation}. Here, $\omega\in\mathbb{R}^n$ is the weight
@@ -199,8 +198,9 @@ whose gradients are
 with $W$ and $b$ the weight matrix and bias of the last linear layer, $h$ the
 layer input, and $e_y$ the one-hot vector of the target class. Here,
 $\mathbbm{1}\{k=y\}$ is the indicator: it equals $1$ if $k=y$ and $0$
-otherwise.
+otherwise.\\
 
+\noindent
 Memory and computational requirements during training are substantial, as
 weights, gradients, activations, and parameters must be stored and updated
 iteratively. Training and inference can both be optimized using precision
@@ -208,19 +208,26 @@ reduction and related techniques, but inference is more well suited to
 optimizations because it only requires a forward pass.
 
 \section{Memory Efficiency and Numerical Formats}
-
 To reduce memory usage and computational load, precision-aware techniques such
 as quantization and mixed-precision training are increasingly employed. Instead
 of using 32-bit or 64-bit floating-point formats, parameters can be stored in
 16-bit or even 8-bit fixed-point representations.
 Equation~\ref{eq:floatingPointFormat} depicts the general floating point format
 and terminology of significand, base, and exponent.
-Tables~\ref{tab:binary-bits} and~\ref{tab:binary-precision} provide an overview
-of the different floating point types and their respective characteristics.
 
 \begin{align}\label{eq:floatingPointFormat}
-	\frac{2469}{200}=12.345=\underbrace{12345}_{\text{significand}}\times\underbrace{10^{\overbrace{-3}^{\text{exponent}}}}_{\text{base}}
+	\frac{2469}{200}=12.345=\underbrace{12345}_{\text{significand}}\times{{\underbrace{10}_{\text{base}}}^{\overbrace{-3}^{\text{exponent}}}}
 \end{align}
+
+\noindent
+Tables~\ref{tab:binary-bits} and~\ref{tab:binary-precision} provide an overview
+of the different floating point types and their respective characteristics. The
+\emph{sign}, \emph{exponent}, and \emph{significand} fields specify how many
+bits are allocated to encode the sign of the number, its scale, and its
+significant digits, respectively. The \emph{exponent bias} is a constant added
+to the true exponent so that it can be stored as an unsigned integer. The
+\emph{precision} (in bits) and corresponding \emph{decimal digits} tell how
+many significant digits can be represented accurately in each format.
 
 \begin{table}[H]
 	\centering
