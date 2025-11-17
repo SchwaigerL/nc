@@ -154,32 +154,58 @@ equivalents:
 \section{Artificial Neural Networks}
 
 A typical neuron in a neural network performs a weighted sum of its inputs,
-followed by an activation function (depicted in~\eqref{eq:activation}):
+followed by an activation function which results in the neuron output $h$
+depicted in~\eqref{eq:activation}. Here, $\omega\in\mathbb{R}^n$ is the weight
+vector, $b \in \mathbb{R}$ is the bias, $x \in \mathbb{R}^n$ is the input, and
+$\sigma$ is a nonlinear activation function (e.g., sigmoid or ReLU).
 
 \begin{equation}\label{eq:activation}
-	a=\omega^\top x+b,\quad\hat{y}=\sigma(a)
+	a=\omega^\top x+b,\quad h=\sigma(a)
 \end{equation}
 
-where $\omega \in \mathbb{R}^n$ is the weight vector, $b \in \mathbb{R}$ is the
-bias, $x \in \mathbb{R}^n$ is the input, and $\sigma$ is a nonlinear activation
-function (e.g., sigmoid or ReLU). Training is conducted via backpropagation,
-where gradients of a loss function $L(\hat{y}, y)$ with respect to the model
-parameters are computed. For example, using the mean squared error:
+\noindent
+In our MLP, hidden layers use the Rectified Linear Unit (ReLU), so
+$\sigma=\mathrm{ReLU}$, while the output layer is linear, producing raw scores
+(also called logits) $z$ later used in~\eqref{eq:ce}. ReLU~\eqref{eq:relu}
+keeps positive activations linear and sets negatives to zero. An additional
+benefit is that the computation is very fast and simple compared to more
+complex activation functions.
 
-\begin{align}\label{eq:mse}
-	L(f(x_1, x_2)) & = {(\sigma(\omega^\top x + b) - y)}^2 \nonumber \\
-	               & = {(\sigma(a) - y)}^2 \nonumber                 \\
-	               & = {(\hat y - y)}^2
-\end{align}
-\begin{alignat}{3}\label{eq:grad-w1}
-	\pdv{L}{\omega_1} & = \pdv{L}{\sigma} &  & \pdv{\sigma}{a}      &  & \pdv{a}{\omega_1} \nonumber \\
-	                  & = 2(\hat y - y)~~ &  & \odv{\sigma(a)}{a}~~ &  & x_1
-\end{alignat}
+\begin{equation}\label{eq:relu}
+	\mathrm{ReLU}(a)=\max(0,a),\qquad\frac{d}{da}\mathrm{ReLU}(a)=\mathbbm{1}\{a>0\}
+\end{equation}
+
+\noindent
+Training of the network is conducted via backpropagation, where gradients of a
+loss function $L$ are computed with respect to the model parameters. For
+multi-class classification with $C=10$ classes, the last layer outputs logits
+$z\in\mathbb{R}^C$. To convert the logits into probabilities, usually softmax
+defined as $p_k=\frac{e^{z_k}}{\sum_{j=1}^C e^{z_j}}$ is used. The probability
+of the true class $y$ is then $p_y$. In our experiments, though, we train
+directly on the logits using a simplified version of the cross-entropy loss
+(the negative log-likelihood of a softmax classifier) implemented in
+Pytorch\footnote{\url{https://pytorch.org/}}:
+
+\begin{equation}\label{eq:ce}
+	L(z,y)=-\log p_y=-z_y+\log\sum_{j=1}^C e^{z_j},
+\end{equation}
+
+whose gradients are
+
+\begin{equation}\label{eq:cegrads}
+	\frac{\partial L}{\partial z_k}=p_k-\mathbbm{1}\{k=y\},\qquad\frac{\partial L}{\partial W}=(p-e_y)h^\top,\qquad\frac{\partial L}{\partial b}=p-e_y,
+\end{equation}
+
+with $W$ and $b$ the weight matrix and bias of the last linear layer, $h$ the
+layer input, and $e_y$ the one-hot vector of the target class. Here,
+$\mathbbm{1}\{k=y\}$ is the indicator: it equals $1$ if $k=y$ and $0$
+otherwise.
 
 Memory and computational requirements during training are substantial, as
-gradients, activations, and parameters must be stored and updated iteratively.
-In contrast, inference requires only a forward pass, making it more amenable to
-optimization via precision reduction.
+weights, gradients, activations, and parameters must be stored and updated
+iteratively. Training and inference can both be optimized using precision
+reduction and related techniques, but inference is more well suited to
+optimizations because it only requires a forward pass.
 
 \section{Memory Efficiency and Numerical Formats}
 
