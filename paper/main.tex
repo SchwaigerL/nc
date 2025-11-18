@@ -131,27 +131,69 @@ build highly efficient models for real-world applications.
 
 \subsection{Related Work}
 
-Prior research in this domain can be broadly classified into two categories:
+Prior research in this domain can be broadly divided into methods that use
+quantization already during training and methods that quantize a pretrained
+model later at deployment time.
 
 \subsubsection*{Quantization During Training}
-Several studies have explored training neural networks with reduced precision
-directly. Notable contributions include:
-\begin{itemize}
-	\item \textbf{Mixed Precision Training}, which leverages FP16 arithmetic for speed while maintaining FP32 master weights~\cite{micikevicius2017mixed}.
-	\item \textbf{DoReFa-Net}, which quantizes weights, activations, and gradients to arbitrary bitwidths~\cite{zhou2018dorefa}.
-	\item \textbf{Q-BERT}, a quantized BERT model that maintains accuracy using only 4-bit weights~\cite{shen2020qbert}.
-\end{itemize}
+Mixed-precision training is an approach where most operations are performed in
+FP16, but a separate high-precision copy of the parameters (often called
+\textit{master weights}) is maintained in FP32~\cite{micikevicius2017mixed}.
+The forward and backward passes use FP16 tensors for faster computation and
+reduced memory usage, but parameter updates are applied to the FP32 master
+weights. The updated FP32 weights are then cast back to FP16 for the next
+forward pass. Keeping master weights in higher precision keeps the loss of
+information smaller and helps the training stability.\\
+
+\noindent
+DoReFa-Net extends this concept by quantizing \textit{weights},
+\textit{activations}, and \textit{gradients} to low-precision
+formats~\cite{zhou2018dorefa}. The method allows using \textit{arbitrary
+	bitwidths}, i.e., the number of bits is not restricted to standard IEEE
+floating-point formats, but can be any small integer (for example, 1, 2, or 4
+bits for weights and slightly higher bitwidths for activations and gradients).
+This is flexible and makes it possible to set the precision specific to
+hardware constraints or application requirements, but the training of the
+network is still end-to-end.\\
+
+\noindent
+Another work is Q-BERT~\cite{shen2020qbert}, that focuses on transformer-based
+language models. BERT (Bidirectional Encoder Representations from Transformers)
+is a large transformer architecture pretrained on large text data and used as a
+generic language representation model. Q-BERT shows that the weights of BERT
+can be quantized down to 4 bits while maintaining accuracy close to the
+full-precision model.
 
 \subsubsection*{Post-Training Quantization}
-Other approaches focus on converting pretrained models into lower-precision
-equivalents:
-\begin{itemize}
-	\item \textbf{Integer-Only Quantization} using symmetric quantization scales~\cite{jacob2018quantization}.
-	\item \textbf{GPTQ}, a method for quantizing large transformer models without retraining~\cite{frantar2022gptq}.
-	\item \textbf{SmoothQuant}, which scales activations to better match weight ranges during quantization~\cite{xiao2024smoothquant}.
-\end{itemize}
+Post-training quantization begins with an already trained full-precision model
+and converts it to a lower precision without (or with minimal) additional
+training. An often used approach is integer-only quantization with symmetric
+scaling~\cite{jacob2018quantization}. Here, both weights and activations are
+mapped to signed integers (for example 8-bit) using a scale factor that is the
+same across positive and negative values (therefore symmetric). This design
+allows the entire inference flow to be implemented with integer arithmetic,
+which is better for embedded or mobile hardware.\\
 
-\section{Artificial Neural Networks}
+\noindent
+Methods such as GPTQ (Gradient Post-Training Quantization) have been tested to
+quantize large transformer models. Examples are GPT language models with
+minimal or no retraining~\cite{frantar2022gptq}. GPTQ treats quantization as an
+optimization problem by using approximations of the local curvature to choose
+quantization levels that minimize the error introduced by replacing
+full-precision weights with low-precision ones. That makes this approach better
+for very large models where a full retraining with quantization would be too
+expensive.\\
+
+\noindent
+SmoothQuant focuses more on activations~\cite{xiao2024smoothquant}. It rescales
+activations and compensates for this rescaling in the weight matrices so that
+the activation distributions become more smooth and better aligned with the
+range supported by low-precision integer formats. This improves the robustness
+of post-training quantization, especially in transformer architectures where
+activation outliers can otherwise complicate the scaling and lead to large
+quantization errors.
+
+\subsection{Artificial Neural Networks}
 A typical neuron in a neural network performs a weighted sum of its inputs,
 followed by an activation function which results in the neuron output $h$
 depicted in~\eqref{eq:activation}. Here, $\omega\in\mathbb{R}^n$ is the weight
@@ -207,7 +249,7 @@ iteratively. Training and inference can both be optimized using precision
 reduction and related techniques, but inference is more well suited to
 optimizations because it only requires a forward pass.
 
-\section{Memory Efficiency and Numerical Formats}
+\subsection{Memory Efficiency and Numerical Formats}
 To reduce memory usage and computational load, precision-aware techniques such
 as quantization and mixed-precision training are increasingly employed. Instead
 of using 32-bit or 64-bit floating-point formats, parameters can be stored in
@@ -222,11 +264,11 @@ and terminology of significand, base, and exponent.
 \noindent
 Tables~\ref{tab:binary-bits} and~\ref{tab:binary-precision} provide an overview
 of the different floating point types and their respective characteristics. The
-\emph{sign}, \emph{exponent}, and \emph{significand} fields specify how many
+\textit{sign}, \textit{exponent}, and \textit{significand} fields specify how many
 bits are allocated to encode the sign of the number, its scale, and its
-significant digits, respectively. The \emph{exponent bias} is a constant added
+significant digits, respectively. The \textit{exponent bias} is a constant added
 to the true exponent so that it can be stored as an unsigned integer. The
-\emph{precision} (in bits) and corresponding \emph{decimal digits} tell how
+\textit{precision} (in bits) and corresponding \textit{decimal digits} tell how
 many significant digits can be represented accurately in each format.
 
 \begin{table}[H]
@@ -465,20 +507,6 @@ additional bit for the sign, only 11 bit must be stored to have the best
 performing model for inference.
 
 \section{Summary}
-% \begin{itemize}
-% 	\item \textbf{16-bit is enough for this classification task}: End-to-end FP16 preserved the accuracy.
-% 	\item \textbf{Three decimals suffice}: Storing weights down to fractional length $3$ caused no visible accuracy loss.
-% \end{itemize}
-
-% \section{Discussion}
-% The results of the first experiments have shown that either the selected task (MNIST
-% classification) was not complex enough to be affected by the decrease in accuracy, or the
-% accuracy would need to be decreased even further than FP16. Otherwise, the results
-% generally indicate that networks trained and evaluated with as low as 16-bit precision can
-% achieve comparable performance to their high-precision counterparts. Moreover, rounding
-% pretrained weights to just 3 decimal digits preserves full accuracy, opening the door to
-% aggressive post-training quantization.This is particularly relevant for edge devices and
-% real-time applications where memory and compute constraints are more relevant.
 
 The experimental results presented in this paper demonstrate the robustness of
 neural networks to reduced parameter precision, particularly for simpler tasks
