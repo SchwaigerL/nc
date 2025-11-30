@@ -339,27 +339,28 @@ or per-element value as specified in Section~\ref{sec:results}.
 \end{figure}
 
 \noindent
-For the MNIST experiments (i) end-to-end precision, (ii) timing, (iii)
-inference-only precision reduction, and (iv) AMP with gradient clipping, we use
-5-fold cross-validation on the training set with random equal splits. Unless
-noted otherwise, figures report fold means, and no test set tuning is
+For the MNIST experiments (i) FP64/FP32/FP16 end-to-end training, (ii) effects
+on timing, (iii) inference-only casting, and (iv) AMP with gradient clipping,
+we use 5-fold cross-validation on the training set with random equal splits.
+Unless noted otherwise, figures report fold means, and no test set tuning is
 performed. In the end-to-end runs, every floating point tensor appearing inside
 the training loop (parameters, activations, gradients) is kept at the target
 precision during training and evaluation. The timing experiment reuses these
 runs to measure mean per-epoch training time and mean evaluation time. For
-inference-only reduction, we first train a baseline model in FP64 and then do
+inference-only casting, we first train a baseline model in FP64 and then do
 inference on copies cast to FP32 and FP16 without any further optimization (so
-no \textit{retraining} on the lower precision).\\
+no \textit{retraining} on the lower precision). The AMP experiment is run on
+MNIST with gradient clipping, comparing an AMP setup (FP16 computations with
+FP32 master weights) against a pure FP32 baseline. We try different global-norm
+and per-element value-clipping thresholds to check stability and report test
+accuracy and training/inference times.\\
 
-The AMP experiment is run on MNIST with gradient clipping, comparing an AMP
-setup (FP16 computations with FP32 master weights) against a pure FP32
-baseline. We try different global-norm and per-element value-clipping
-thresholds to check stability and report test accuracy and training/inference
-times. We also run a one-off rounding experiment on FashionMNIST (batch size
-\num{256}, FP32 training): after training, only the stored weights are rounded
-to $k$ decimal places ($k{=}1\ldots14$) and inference remains FP32. Inputs and
-intermediate computations stay at full precision. We report test accuracy as a
-function of $k$ and note the impact on storage.
+\noindent
+On the FashionMNIST dataset, experiment (v) is a rounding experiment (batch
+size \num{256}, FP32 training) which means that after training only the stored
+weights are rounded to $k$ decimal places ($k{=}1\ldots14$) and inference
+remains at FP32. Inputs and intermediate computations stay at full precision.
+We report test accuracy as a function of $k$ and note the impact on storage.
 
 \section{Experiments and Results}\label{sec:results}
 In the first experiment, every floating-point tensor that is used inside the
@@ -407,14 +408,14 @@ all because for the lower precisions, there was no new model trained.
 \end{figure}
 
 \subsection*{Automatic Mixed Precision and Gradient Clipping}
-Automatic Mixed Precision (AMP) improves deep learning training by using both
-FP16 and FP32 data types reducing memory usage and increasing computational
-speed. However, FP16's limited dynamic range can cause numerical instability,
-especially during backpropagation. To address this, Gradient Clipping is used
-to cap the magnitude of gradients (either globally or per element) preventing
-extreme updates that could hinder convergence. Together, AMP and gradient
-clipping enable efficient, stable training by balancing performance and
-numerical precision.
+AMP improves deep learning training by using both FP16 and FP32 data types
+reducing memory usage and increasing computational speed. However, FP16's
+limited dynamic range can cause numerical instability, especially during
+backpropagation. To address this, Gradient Clipping is used to cap the
+magnitude of gradients (either globally or per element) preventing extreme
+updates that could hinder convergence. Together, AMP and gradient clipping
+enable efficient, stable training by balancing performance and numerical
+precision.
 
 First step is using global norm clipping, all gradients are collectively scaled
 to ensure their combined norm does not exceed a specified threshold, promoting
