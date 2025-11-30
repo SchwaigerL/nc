@@ -15,6 +15,7 @@
 \usepackage{derivative}
 \usepackage{subcaption}
 \usepackage{bbm}
+\usepackage{siunitx}
 
 \usepackage[
 	style=nejm,
@@ -49,20 +50,20 @@
 	\noindent
 	We study how the numerical precision of weights, activations, and gradients in
 	neural networks can be reduced without sacrificing too much of the performance.
-	Using MNIST as a general dataset (and FashionMNIST for the decimal rounding),
-	we benchmark uniform quantization (mapping real values to evenly spaced levels
-	via a single step size), mixed-precision formats, and post-training decimal
-	rounding. We evaluate precision settings (FP64/FP32/FP16) across all tensors
-	during training, experiment with an inference-only quantization path on
-	FP64-trained models, and test automatic mixed precision with gradient clipping.
-	Metrics include test accuracy, training/inference time, and parameter storage.
-	We compare end-to-end low-precision training, inference-only quantization, and
-	mixed-precision with gradient clipping, and evaluate their impact on test
-	accuracy and efficiency. The results on the used test setup show that (i)
-	16-bit end-to-end training does not significantly decrease test accuracy for
-	the MNIST dataset, (ii) three-decimal-place weight rounding while keeping
-	32-bit precision incurs minimal accuracy loss. These findings verify limits for
-	memory- and energy-constrained usecases like inference in mobile devices.
+	Using MNIST as a general dataset, and FashionMNIST for the decimal rounding, we
+	benchmark training with reduced precision (FP64/FP32/FP16), mixed-precision
+	formats, and post-training decimal rounding. We evaluate precision settings
+	across all tensors during training, experiment with an inference-only casting
+	to lower-precision floating point on FP64-trained models, and test Automatic
+	Mixed Precision (AMP) with gradient clipping. Metrics include test accuracy,
+	training/inference time, and parameter storage. We compare end-to-end
+	low-precision training, inference-only quantization, and mixed-precision with
+	gradient clipping, and evaluate their impact on test accuracy and efficiency.
+	The results on the used test setup show that (i) 16-bit end-to-end training
+	does not significantly decrease test accuracy for the MNIST dataset, (ii)
+	three-decimal-place weight rounding while keeping 32-bit precision incurs
+	minimal accuracy loss. These findings verify limits for memory- and
+	energy-constrained usecases like inference in mobile devices.
 \end{abstract}
 
 \section{Introduction}
@@ -85,7 +86,7 @@ bitwidths depending on how important each part is. For example, the early
 layers that handle low-level features might use higher precision, while deeper
 layers could work fine with fewer bits. This flexible approach often leads to
 better results than using a single fixed precision for the whole model.
-Researchers have used a range of techniques, like stochastic gradient descent
+Researchers have used a range of techniques, like Stochastic Gradient Descent
 (SGD), heuristics, and even evolutionary algorithms, to find the best bitwidth
 settings for each layer. \\\\ Another method that helps reduce resource usage
 is network pruning. This means cutting out parts of the network that do not
@@ -95,12 +96,13 @@ structure. It does not need gradient information and can still find good
 network shapes by exploring many possibilities. This makes it useful when you
 want to shrink a network without going through heavy retraining. \\\\ Previous
 studies have shown that reducing the precision of neural network parameters can
-lead to significant improvements in memory usage and processing speed. Even
-when precision is reduced to very low levels, models can still perform
-competitively on complex tasks. However, while these early results are
-promising, the overall effects of lowering precision, especially how it
-influences model accuracy, training behavior, and storage efficiency, are still
-not fully understood and deserve more detailed investigation. \\\\ This is
+lead to significant improvements in memory usage and inference efficiency
+without degrading the accuracy too much. For example, integer-only INT8
+quantization~\cite{jacob2018quantization} and also binary-weight and
+binary-activation CNNs evaluated on ImageNet~\cite{rastegariECCV16}. However,
+while these early results are promising, the accuracy/efficiency trade-off
+depends on architecture, task, storage efficiency, and training setup, so
+precision reduction still deserves more detailed investigation. \\\\ This is
 where our experimental work begins. In this paper, we take a closer look at how
 different levels of parameter precision affect the behavior and performance of
 neural networks. Our goal is to understand what happens when we reduce
@@ -148,7 +150,7 @@ information smaller and helps the training stability.\\
 DoReFa-Net extends this concept by quantizing \textit{weights},
 \textit{activations}, and \textit{gradients} to low-precision
 formats~\cite{zhou2018dorefa}. The method allows using \textit{arbitrary
-	bitwidths}, i.e., the number of bits is not restricted to standard IEEE
+	bitwidths} which means the number of bits is not restricted to standard IEEE
 floating-point formats, but can be any small integer (for example, 1, 2, or 4
 bits for weights and slightly higher bitwidths for activations and gradients).
 This is flexible and makes it possible to set the precision specific to
@@ -166,7 +168,7 @@ full-precision model.
 \subsubsection*{Post-Training Quantization}
 Post-training quantization begins with an already trained full-precision model
 and converts it to a lower precision without (or with minimal) additional
-training. An often used approach is integer-only quantization with symmetric
+training. An often used approach is integer quantization with symmetric
 scaling~\cite{jacob2018quantization}. Here, both weights and activations are
 mapped to signed integers (for example 8-bit) using a scale factor that is the
 same across positive and negative values (therefore symmetric). This design
@@ -176,9 +178,9 @@ which is better for embedded or mobile hardware.\\
 \noindent
 Methods such as GPTQ (Gradient Post-Training Quantization) have been tested to
 quantize large transformer models. Examples are GPT language models with
-minimal or no retraining~\cite{frantar2022gptq}. GPTQ treats quantization as an
-optimization problem by using approximations of the local curvature to choose
-quantization levels that minimize the error introduced by replacing
+minimal or no retraining~\cite{frantar2022gptq}. GPTQ handles quantization as
+an optimization problem by using approximations of the local curvature to
+choose quantization levels that minimize the error introduced by replacing
 full-precision weights with low-precision ones. That makes this approach better
 for very large models where a full retraining with quantization would be too
 expensive.\\
@@ -187,8 +189,8 @@ expensive.\\
 SmoothQuant focuses more on activations~\cite{xiao2024smoothquant}. It rescales
 activations and compensates for this rescaling in the weight matrices so that
 the activation distributions become more smooth and better aligned with the
-range supported by low-precision integer formats. This improves the robustness
-of post-training quantization, especially in transformer architectures where
+range supported by low-precision integer formats. This improves the
+post-training quantization, especially in transformer architectures where
 activation outliers can otherwise complicate the scaling and lead to large
 quantization errors.
 
@@ -197,7 +199,7 @@ A typical neuron in a neural network performs a weighted sum of its inputs,
 followed by an activation function which results in the neuron output $h$
 depicted in~\eqref{eq:activation}. Here, $\omega\in\mathbb{R}^n$ is the weight
 vector, $b \in \mathbb{R}$ is the bias, $x \in \mathbb{R}^n$ is the input, and
-$\sigma$ is a nonlinear activation function (e.g., sigmoid or ReLU).
+$\sigma$ is a nonlinear activation function (sigmoid or ReLU, for example).
 
 \begin{equation}\label{eq:activation}
 	a=\omega^\top x+b,\quad h=\sigma(a)
@@ -208,7 +210,7 @@ In our MLP, hidden layers use the Rectified Linear Unit (ReLU), so
 $\sigma=\mathrm{ReLU}$, while the output layer is linear, producing raw scores
 (also called logits) $z$ later used in~\eqref{eq:ce}. ReLU~\eqref{eq:relu}
 keeps positive activations linear and sets negatives to zero. An additional
-benefit is that the computation is very fast and simple compared to more
+benefit is that the calculation is very fast and simple compared to more
 complex activation functions.
 
 \begin{equation}\label{eq:relu}
@@ -238,15 +240,15 @@ whose gradients are
 
 with $W$ and $b$ the weight matrix and bias of the last linear layer, $h$ the
 layer input, and $e_y$ the one-hot vector of the target class. Here,
-$\mathbbm{1}\{k=y\}$ is the indicator: it equals $1$ if $k=y$ and $0$
+$\mathbbm{1}\{k=y\}$ is the indicator: it equals \num{1} if $k=y$ and \num{0}
 otherwise.\\
 
 \noindent
 Memory and computational requirements during training are substantial, as
-weights, gradients, activations, and parameters must be stored and updated
-iteratively. Training and inference can both be optimized using precision
-reduction and related techniques, but inference is more well suited to
-optimizations because it only requires a forward pass.
+weights, gradients, and activations must be stored and updated iteratively.
+Training and inference can both be optimized using precision reduction and
+related techniques, but inference is more well suited to optimizations because
+it only requires a forward pass.
 
 \subsection{Memory Efficiency and Numerical Formats}
 To reduce memory usage and computational load, precision-aware techniques such
@@ -303,13 +305,14 @@ The effect of numerical precision on training and inference is evaluated
 through five experiment groups run on standard image classification tasks. The
 main dataset MNIST\footnote{LeCun, Cortes, and Burges:
 	\url{http://yann.lecun.com/exdb/mnist/}.} ($28\times 28$ grayscale images of
-handwritten digits, train/test split $60.000$/$10.000$, 10 classes, examples
-shown in Figure~\ref{fig:mnistSample}) is used to determine precision effects
-on accuracy and runtime under a simple workload, while an after-training
-rounding experiment is performed on FashionMNIST\footnote{Xiao, Rasul, and
-	Vollgraf: \url{https://github.com/zalandoresearch/fashion-mnist}.} ($28\times
-28$ grayscale images of clothing items, train/test split $60.000$/$10.000$, 10
-classes) so the impact of using coarse value sets is better observable.\\
+handwritten digits, train/test split \num{60000}/\num{10000}, \num{10} classes,
+examples shown in Figure~\ref{fig:mnistSample}) is used to determine precision
+effects on accuracy and runtime under a simple workload, while an
+after-training rounding experiment is performed on FashionMNIST\footnote{Xiao,
+	Rasul, and Vollgraf: \url{https://github.com/zalandoresearch/fashion-mnist}.}
+($28\times 28$ grayscale images of clothing items, train/test split
+\num{60000}/\num{10000}, \num{10} classes) so the impact of using coarse value
+sets is better observable.\\
 
 \begin{figure}[H]
 	\centering
@@ -317,11 +320,17 @@ classes) so the impact of using coarse value sets is better observable.\\
 	\caption{Sample images from the MNIST dataset.}\label{fig:mnistSample}
 \end{figure}
 
-The classifier used is a fully connected network
-$784\rightarrow128\rightarrow64\rightarrow10$ with ReLU between linear layers
-(Figure~\ref{fig:mlpStructure}). Inputs are normalized with mean $0.1307$ and
-std $0.3081$. Unless stated otherwise, we train with cross-entropy loss and SGD
-(learning rate $0.01$, momentum $0.9$), batch size $64$, and on CUDA.\\
+\noindent
+The classifier used is a fully connected network (layers:
+$784\rightarrow128\rightarrow64\rightarrow10$) with ReLU between linear layers
+(see structure in Figure~\ref{fig:mlpStructure}). The final linear layer
+produces \num{10} logits and during training we use \textit{CrossEntropyLoss}
+on the logits, softmax is not applied in the forward pass. Optimization uses
+SGD with learning rate \num{0.01} and momentum \num{0.9}, batch size \num{64},
+on CUDA.\ Unless noted otherwise we train for a small, fixed number of epochs
+per fold. Automatic mixed precision runs use \textit{autocast} with a
+\textit{GradScaler}. When enabled, gradients are clipped either by global norm
+or per-element value as specified in Section~\ref{sec:results}.
 
 \begin{figure}[H]
 	\centering
@@ -329,30 +338,30 @@ std $0.3081$. Unless stated otherwise, we train with cross-entropy loss and SGD
 	\caption{Network structure used in the experiments.}\label{fig:mlpStructure}
 \end{figure}
 
+\noindent
 For the MNIST experiments (i) end-to-end precision, (ii) timing, (iii)
-inference-only precision reduction, and (iv) automatic mixed precision (AMP)
-with gradient clipping, we use 5-fold cross-validation on the training set with
-random equal splits. Unless noted otherwise, figures report fold means, and no
-test set tuning is performed. In the end-to-end runs, every floating point
-tensor appearing inside the training loop (parameters, activations, gradients,
-and optimizer state) is kept at the target precision during training and
-evaluation. The timing experiment reuses these runs to measure mean per-epoch
-training time and mean evaluation time. For inference-only reduction, we first
-train a baseline model in FP64 and then do inference on copies cast to FP32 and
-FP16 without any further optimization (so no \textit{retraining} on the lower
-precision).\\
+inference-only precision reduction, and (iv) AMP with gradient clipping, we use
+5-fold cross-validation on the training set with random equal splits. Unless
+noted otherwise, figures report fold means, and no test set tuning is
+performed. In the end-to-end runs, every floating point tensor appearing inside
+the training loop (parameters, activations, gradients) is kept at the target
+precision during training and evaluation. The timing experiment reuses these
+runs to measure mean per-epoch training time and mean evaluation time. For
+inference-only reduction, we first train a baseline model in FP64 and then do
+inference on copies cast to FP32 and FP16 without any further optimization (so
+no \textit{retraining} on the lower precision).\\
 
 The AMP experiment is run on MNIST with gradient clipping, comparing an AMP
 setup (FP16 computations with FP32 master weights) against a pure FP32
 baseline. We try different global-norm and per-element value-clipping
 thresholds to check stability and report test accuracy and training/inference
 times. We also run a one-off rounding experiment on FashionMNIST (batch size
-$256$, FP32 training): after training, only the stored weights are rounded to
-$k$ decimal places ($k{=}1\ldots14$) and inference remains FP32. Inputs and
+\num{256}, FP32 training): after training, only the stored weights are rounded
+to $k$ decimal places ($k{=}1\ldots14$) and inference remains FP32. Inputs and
 intermediate computations stay at full precision. We report test accuracy as a
 function of $k$ and note the impact on storage.
 
-\section{Results}
+\section{Experiments and Results}\label{sec:results}
 In the first experiment, every floating-point tensor that is used inside the
 training loop was converted to a lower precision data type. This therefore
 includes the weights and biases, activations, gradients, optimizer states, etc.
@@ -411,9 +420,9 @@ First step is using global norm clipping, all gradients are collectively scaled
 to ensure their combined norm does not exceed a specified threshold, promoting
 stable updates across the network. In second step per-element clipping
 constrains each individual gradient component within a fixed range, directly
-limiting extreme values. These methods are evaluated under Automatic Mixed
-Precision (AMP) to compare their impact on training stability, model accuracy,
-and computation time across different precision types.
+limiting extreme values. These methods are evaluated under AMP to compare their
+impact on training stability, model accuracy, and computation time across
+different precision types.
 
 \begin{figure}[H]
 	\centering
