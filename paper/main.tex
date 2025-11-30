@@ -16,6 +16,7 @@
 \usepackage{subcaption}
 \usepackage{bbm}
 \usepackage{siunitx}
+\usepackage{refcount}
 
 \usepackage[
 	style=nejm,
@@ -163,7 +164,17 @@ language models. BERT (Bidirectional Encoder Representations from Transformers)
 is a large transformer architecture pretrained on large text data and used as a
 generic language representation model. Q-BERT shows that the weights of BERT
 can be quantized down to 4 bits while maintaining accuracy close to the
-full-precision model.
+full-precision model.\\
+
+\noindent
+AMP improves deep learning training by using both FP16 and FP32 data types
+reducing memory usage and increasing computational speed. However, FP16's
+limited dynamic range can cause numerical instability, especially during
+backpropagation. To address this, Gradient Clipping is used to cap the
+magnitude of gradients (either globally or per element) preventing extreme
+updates that could hinder convergence. Together, AMP and gradient clipping
+enable efficient, stable training by balancing performance and numerical
+precision~\cite{micikevicius2017mixed}.
 
 \subsubsection*{Post-Training Quantization}
 Post-training quantization begins with an already trained full-precision model
@@ -207,7 +218,7 @@ $\sigma$ is a nonlinear activation function (sigmoid or ReLU, for example).
 
 \noindent
 In our MLP, hidden layers use the Rectified Linear Unit (ReLU), so
-$\sigma=\mathrm{ReLU}$, while the output layer is linear, producing raw scores
+$\sigma:=\mathrm{ReLU}$, while the output layer is linear, producing raw scores
 (also called logits) $z$ later used in~\eqref{eq:ce}. ReLU~\eqref{eq:relu}
 keeps positive activations linear and sets negatives to zero. An additional
 benefit is that the calculation is very fast and simple compared to more
@@ -235,13 +246,16 @@ Pytorch\footnote{\url{https://pytorch.org/}}:
 whose gradients are
 
 \begin{equation}\label{eq:cegrads}
-	\frac{\partial L}{\partial z_k}=p_k-\mathbbm{1}\{k=y\},\qquad\frac{\partial L}{\partial W}=(p-e_y)h^\top,\qquad\frac{\partial L}{\partial b}=p-e_y,
+	\frac{\partial L}{\partial z_k}=p_k-\mathbbm{1}_{k=y},\qquad\frac{\partial L}{\partial W}=(p-e_y)h^\top,\qquad\frac{\partial L}{\partial b}=p-e_y,
 \end{equation}
 
 with $W$ and $b$ the weight matrix and bias of the last linear layer, $h$ the
 layer input, and $e_y$ the one-hot vector of the target class. Here,
-$\mathbbm{1}\{k=y\}$ is the indicator: it equals \num{1} if $k=y$ and \num{0}
-otherwise.\\
+$\mathbbm{1}_{k=y}$ is the indicator: it equals \num{1} if $k=y$ and \num{0}
+otherwise. For evaluation, the model is fed multiple inputs and the results of
+the indicator function are summed up and divided by the total number of inputs.
+This is then called the accuracy score of the model which can be understood as
+the ratio of correct predictions.\\
 
 \noindent
 Memory and computational requirements during training are substantial, as
@@ -283,8 +297,9 @@ many significant digits can be represented accurately in each format.
 		Double (FP64) & 1    & 11       & 52          & 64    \\
 		\bottomrule
 	\end{tabular}
-	\caption{Field widths (in bits) of common IEEE754 formats (adapted from~\cite{fparithmetic}).}\label{tab:binary-bits}
+	\caption{Field widths (in bits) of common IEEE754 formats\protect\footnotemark.}\label{tab:binary-bits}
 \end{table}
+\footnotetext{\label{footnoteWiki}\url{https://en.wikipedia.org/wiki/Floating-point_arithmetic}}
 
 \begin{table}[H]
 	\centering
@@ -297,7 +312,7 @@ many significant digits can be represented accurately in each format.
 		Double (FP64) & 1023          & 53               & $\sim$15.9     \\
 		\bottomrule
 	\end{tabular}
-	\caption{Range and precision characteristics of the formats (adapted from~\cite{fparithmetic}).}\label{tab:binary-precision}
+	\caption{Range and precision characteristics of the formats\protect\footnotemark[\getrefnumber{footnoteWiki}].}\label{tab:binary-precision}
 \end{table}
 
 \section{Experimental Design}
@@ -363,9 +378,9 @@ remains at FP32. Inputs and intermediate computations stay at full precision.
 We report test accuracy as a function of $k$ and note the impact on storage.
 
 \section{Experiments and Results}\label{sec:results}
-In the first experiment, every floating-point tensor that is used inside the
+In the first experiment, every floating-point variable that is used inside the
 training loop was converted to a lower precision data type. This therefore
-includes the weights and biases, activations, gradients, optimizer states, etc.
+includes the weights and biases, activations, gradients, and optimizer states.
 The types tried were FP64, FP32, and FP16.
 
 \subsection*{Accuracy Across Bitwidths}
@@ -379,7 +394,7 @@ assume that the model accuracy has neither decreased, nor increased.
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.85\textwidth]{figures/trainingAndInference.png}
-	\caption{Model accuracy evaluated after training with different precisions.}\label{fig:modelAccTrainAndInf}
+	\caption{Model accuracy evaluated after training with different precisions (5-fold CV).}\label{fig:modelAccTrainAndInf}
 \end{figure}
 
 \subsection*{Training and Inference Time}
@@ -390,7 +405,7 @@ in both regards, and neither a real speed-up nor a slow-down has been measured.
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.85\textwidth]{figures/times.png}
-	\caption{Training and evaluation times for the different precisions.}\label{fig:modelEvalTrainTimes}
+	\caption{Training and evaluation times for the different precisions (5-fold CV).}\label{fig:modelEvalTrainTimes}
 \end{figure}
 
 \subsection*{Inference-Only Testing}
@@ -408,93 +423,98 @@ all because for the lower precisions, there was no new model trained.
 \end{figure}
 
 \subsection*{Automatic Mixed Precision and Gradient Clipping}
-AMP improves deep learning training by using both FP16 and FP32 data types
-reducing memory usage and increasing computational speed. However, FP16's
-limited dynamic range can cause numerical instability, especially during
-backpropagation. To address this, Gradient Clipping is used to cap the
-magnitude of gradients (either globally or per element) preventing extreme
-updates that could hinder convergence. Together, AMP and gradient clipping
-enable efficient, stable training by balancing performance and numerical
-precision.
+This experiment uses AMP with different gradient clipping methods. The first
+method is called global norm clipping where all gradients are collectively
+scaled to ensure their combined norm does not exceed a specified threshold,
+which ensures stable updates across the network. The second method is
+per-element clipping which constrains each individual gradient component within
+a fixed range, directly limiting extreme values. These methods are evaluated
+under AMP to compare their impact on training stability, model accuracy, and
+computation time across different precision types.\\
 
-First step is using global norm clipping, all gradients are collectively scaled
-to ensure their combined norm does not exceed a specified threshold, promoting
-stable updates across the network. In second step per-element clipping
-constrains each individual gradient component within a fixed range, directly
-limiting extreme values. These methods are evaluated under AMP to compare their
-impact on training stability, model accuracy, and computation time across
-different precision types.
+\noindent
+Figure~\ref{fig:ampGradientNormClipping} depicts the effect of the
+\textit{global} gradient norm on accuracy, training and testing timings.
+Accuracy is virtually the same between FP16 and FP32 when gradient clipping is
+used validating the stability of AMP and gradient scaling. Eval time is nearly
+identical for both formats, as evaluation involves fewer operations and less
+intense memory bandwidth usage.
 
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.95\textwidth]{figures/FP16_32_clipping.png}
-	\caption{Affect of Gradient Norm on accuracy, training and testing timings.
-		Accuracy is virtually the same between FP16 and FP32 when gradient clipping is used
-		validating the stability of AMP and gradient scaling.
-		Eval time is nearly identical for both formats, as evaluation involves fewer operations
-		and less intense memory bandwidth usage.}
+	\caption{Effect of global gradient norm clipping on accuracy, training and testing timings.}\label{fig:ampGradientNormClipping}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.95\textwidth]{figures/gradclip_16.png}
-	\caption{Effect of Per-Element Gradient Clipping on FP16. Accuracy vs Training \& Eval Time}\label{fig:grad16}
+	\caption{Effect of per-element gradient clipping on FP16 $\rightarrow$ Accuracy vs training and evaluation time}\label{fig:grad16}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.95\textwidth]{figures/gradclip_32.png}
-	\caption{Effect of Per-Element Gradient Clipping on FP32. Accuracy vs Training \& Eval Time}\label{fig:grad32}
+	\caption{Effect of per-element gradient clipping on FP32 $\rightarrow$ Accuracy vs training and evaluation time}\label{fig:grad32}
 \end{figure}
 
-Figure~\ref{fig:grad16} shows accuracy peaked at 97.07\% with a clipping value
-of 0.5, while the lowest accuracy (96.55\%) occurred at clip=0.01, suggesting
-that very small clip values may overly restrict gradient updates and hurt
-learning. Training time ranged indicating that moderate clipping supports
-efficient convergence. Evaluation time remained stable across all clip values
-(around 2.01s to 2.16s), showing that clipping primarily impacts training
-rather than inference performance. Also Figure~\ref{fig:grad32} shows that
+\noindent
+Figure~\ref{fig:grad16} shows that accuracy peaked at 97.07\% with a clipping
+value of 0.5, while the lowest accuracy (96.55\%) occurred at clip=0.01,
+suggesting that very small clip values may overly restrict gradient updates and
+hurt learning. Training time varied, which indicates that moderate clipping
+supports efficient convergence. The evaluation time remained stable across all
+clip values (around 2.01s to 2.16s), showing that clipping primarily impacts
+training rather than inference performance. Figure~\ref{fig:grad32} shows that
 accuracy was most stable across all clip values with the highest accuracy at
-clip=0.5, demonstrating its robustness to gradient clipping variations.
-Training time suggesting that larger clip values can speed up convergence
-without sacrificing stability. Evaluation time confirming that clipping had
-minimal effect on inference time.
+clip=0.5, demonstrating its robustness to gradient clipping variations. The
+training was conducted with 5-fold CV, 10 epochs, and batch size 64. The
+training time suggests that larger clip values can speed up convergence without
+sacrificing stability. Evaluation time confirms that clipping had only a minor
+effect on inference time.
 
 \subsection*{Effect of Decimal Rounding}
-
 A non training related issue is the storage of the NN parameters. Usually, the
 parameters are stored in the format that was chosen to train with. This is best
 for reproducibility as well as accuracy when doing inference with the trained
 model weights. The datatype precision has a higher impact during training
-though, which begs the question if one could omit precision from the model
+though, which begs the question if one could reduce the precision of the model
 weights. In this section, we explore a naive quantization method: Rounding to a
-fixed number of decimals. With significantly little decimals and a reasonable
-range for the integer part, one could store only the significant and provide
-base as well as exponent as metadata. When loading the model, the weights are
-converted back to floating point, with whatever precision is desired. Only the
-weights are quantized; the input data, as well are the values propagated
-through the network are at full precision.
+fixed number of decimals. With a small enough number of decimals and a
+reasonable range for the integer part, one could store only the significant and
+provide base as well as exponent as separate data. When loading the model, the
+weights are converted back to floating point, with whatever precision is
+desired. Only the weights are quantized; the input data, as well are the values
+propagated through the network are at full precision.\\
 
+\noindent
 The first step is to examine the distribution of parameter values. By the
 standard deviation around modes one can make an educated guess as to how many
 decimals are needed. The range will decide how large the integer part may get.
 Reading from the distribution is just a heuristic though, so we will also test
-the hypotheses.
+the hypotheses.\\
+
+\noindent
+Figure~\ref{fig:roundingDistribution1} shows the distribution of the model
+weights in a three layer architecture. The values are in $[-0.5, 0.5]$, which
+means no integer part is needed in this example. In Figure~\ref{fig:118_2} the
+weights of the same model rounded to two decimals is depicted. The envelope of
+the bins is still very similar to the full precision distribution, which makes
+it appear like a good approximation. The results of evaluating this heuristic
+is shown in Figure 11, where the results of how rounding the decimal part
+affects the test accuracy is shown.
 
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.85\textwidth]{figures/118_dist.png}
 	\caption{
-		Distribution of model weights in each layer. The values are in $[-0.5, 0.5]$,
-		this means no integer part is needed in this example. Generally, with normalized data
-		and the quite popular L1-/L2-/Batch-Norm layers, weight values in $[-1, 1]$ is to be expected.}
+		Distribution of model weights in each layer.}\label{fig:roundingDistribution1}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.85\textwidth]{figures/118_dist2.png}
-	\caption{Distribution of model weights in each layer after rounding to two decimals.
-		This appears to be a good approximation already.}\label{fig:118_2}
+	\caption{Distribution of model weights in each layer after rounding to two decimals.}\label{fig:118_2}
 \end{figure}
 
 \begin{figure}[H]
@@ -503,58 +523,51 @@ the hypotheses.
 	\caption{Test accuracy vs.\ number of decimal digits retained in weights.}\label{fig:118_acc}
 \end{figure}
 
+\noindent
 Figure~\ref{fig:118_acc} shows how rounding the decimal part affects the test
 accuracy. For just one decimal the model has a maximum of 19 different weights
 at its disposal, which makes the model have only 10\% accuracy, random guessing
 with a 10 class problem. Two decimals perform significantly better. At 70\%
-accuracy the model gets close to the full precision 88\% accuracy with 32 bit
-floating point. Making an educated guess on distribution such as
+accuracy the model gets close to the full precision 88\% accuracy with 32 Bit
+floating point. Making an educated guess the on distribution such as
 Figure~\ref{fig:118_2} seems to be a good heuristic for this example. At just 3
 decimals, the full 32 bit precision is reached. Thus we can conclude that with
-just 10 bit for representing 3 decimals, no bits for the integer part and one
-additional bit for the sign, only 11 bit must be stored to have the best
-performing model for inference.
+just \num{10} Bits for representing 3 decimals, no bits for the integer part
+and one additional bit for the sign, only \num{11} Bits must be stored to have
+the best performing model for inference. The storage size of the model is
+reduced to $\frac{11}{32}\approx 34\%$ of the otherwise full \num{32} Bit
+model.
 
-\section{Summary}
+\section{Summary and Conclusion}
 
-The experimental results presented in this paper demonstrate the robustness of
-neural networks to reduced parameter precision, particularly for simpler tasks
-like MNIST classification. Key findings include:
+Regarding the precision reduction during training and inference, models with
+16-bit floating-point (FP16) precision preserved accuracy comparable to
+higher-precision formats (FP32 and FP64). This suggests that for tasks of
+similar complexity, FP16 is sufficient, offering potential memory and
+computational savings without sacrificing performance. Reducing precision only
+during inference, after training with high-precision (FP64), maintained
+baseline accuracy. This is particularly valuable for deployment scenarios where
+training is done on powerful hardware, but inference occurs on
+resource-constrained devices. Training with mixed precision and Gradient
+Clipping resulted in similar test accuracy scores as precision reduction during
+training as well as post-training quantization. No significant decrease in
+model performance accuracy was detected. The train and test times were similar,
+regardless of using FP32, FP16 or a mix of both. Rounding trained weights to
+just three decimal digits (approximately 11 bits) achieved full accuracy,
+highlighting the potential for aggressive quantization in storage-efficient
+model deployment. This finding is significant for edge applications where
+memory footprint is critical.\\
 
-\begin{itemize}
-	\item \textbf{Precision Reduction During Training and Inference}: Training and
-	      evaluating models with 16-bit floating-point (FP16) precision preserved accuracy
-	      comparable to higher-precision formats (FP32 and FP64). This suggests that for
-	      tasks of similar complexity, FP16 is sufficient, offering potential memory and
-	      computational savings without sacrificing performance.
-
-	\item \textbf{Post-Training Quantization}: Reducing precision only during inference, after
-	      training with high-precision (FP64), maintained baseline accuracy. This is
-	      particularly valuable for deployment scenarios where training is done on powerful
-	      hardware, but inference occurs on resource-constrained devices.
-
-	\item \textbf{Mixed-Precision:} Training with mixed precision and Gradient Clipping
-	      resulted in similar test accuracy scores as precision reduction during training
-	      as well as post-training quantization. No significant decrease in model
-	      performance accuracy was detected. The train and test times were similar,
-	      regardless of using FP32, FP16 or a mix of both.
-
-	\item \textbf{Weight Rounding:} Rounding trained weights to just three decimal digits
-	      (approximately 11 bits) achieved full accuracy, highlighting the potential for
-	      aggressive quantization in storage-efficient model deployment. This finding is
-	      significant for edge applications where memory footprint is critical.
-\end{itemize}
-
+\noindent
 However, the simplicity of the MNIST dataset and the small network architecture
 used in the experiments may limit the generalizability of these findings. More
 complex tasks (e.g., CIFAR-10, ImageNet) and deeper architectures (e.g., CNNs,
 Transformers) could exhibit greater sensitivity to precision reduction.
 Additionally, the impact of precision on training dynamics, such as gradient
 flow and convergence, was not deeply explored and could be a focus for future
-work.
+work.\\
 
-\section{Conclusion}
-
+\noindent
 This study demonstrates that neural networks can maintain strong performance
 even under significant reductions in parameter precision, particularly for
 simpler tasks like MNIST classification. Key findings confirm that FP16
@@ -562,8 +575,9 @@ training and inference, post-training quantization, and aggressive weight
 rounding (down to three decimal digits) preserve model accuracy while improving
 memory and computational efficiency. These results are promising for deploying
 models in resource-constrained environments, such as edge devices and real-time
-applications.
+applications.\\
 
+\noindent
 To build on these insights and expand their applicability, future work should
 focus on the following directions:
 
